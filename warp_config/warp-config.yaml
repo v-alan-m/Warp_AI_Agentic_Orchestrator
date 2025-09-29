@@ -1,0 +1,4 @@
+mcp_servers:
+  - name: router-mcp
+    type: http
+    url: http://localhost:8085/route

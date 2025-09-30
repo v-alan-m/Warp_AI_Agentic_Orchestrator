@@ -40,16 +40,17 @@ Body JSON (constructed by TaskRouter):
 ```
 
 3) What Router writes during execution (your persisted logs)
-A) 'docs/build-summary.md' (human log)
+A) '/docs/build-summary.md' (human log)
 
 Example lines as the flow progresses:
 ```
-- 2025-09-29T10:02:11 • `site-scaffold-001` • **FileCreator** → Create folders /src/pages/services, /src/assets/styles, /src/assets/scripts and create files /src/pages/index.html, /src/pages/about.html, /src/pages/services/frontend.html, /src/pages/services/backend.html, /src/pages/services/robotics.html, /src/assets/styles/main.css, /src/assets/scripts/main.js
-- 2025-09-29T10:02:18 • `site-scaffold-001` • **FrontendDeveloper** → Implement /src/pages/index.html per /docs/site-spec.md (hero, #disciplines cards, #contact form, skip link to #main, semantic landmarks) and add base responsive styles in /src/assets/styles/main.css (WCAG AA).
-- 2025-09-29T10:02:35 • `site-scaffold-001` • **FrontendDeveloper** → Implement /src/pages/services/{frontend,backend,robotics}.html; each with hero, offerings list, mini case studies, CTA back to '/#disciplines'; keep shared header/footer and active nav
-- 2025-09-29T10:02:54 • `site-scaffold-001` • **FrontendDeveloper** → Implement /src/pages/about.html with story, values, leadership highlights, CTA to '/#contact'; consistent header/footer
-- 2025-09-29T10:03:05 • `site-scaffold-001` • **FrontendDeveloper** → Update /src/assets/scripts/main.js: smooth internal anchor scroll, required-fields guard for #contact form, simple mobile menu toggle
-- 2025-09-29T10:03:15 • `site-scaffold-001` • **GitWorkflow** → Stage all changes and commit with message 'feat(site): scaffold pages, base styles, minimal JS for consultancy'
+2025-09-29T10:02:11 • `site-scaffold-001` • **FileCreator** → Create folders /project/src/pages/services, /project/src/assets/styles, /project/src/assets/scripts and create files /project/src/pages/index.html, /project/src/pages/about.html, /project/src/pages/services/frontend.html, /project/src/pages/services/backend.html, /project/src/pages/services/robotics.html, /project/src/assets/styles/main.css, /project/src/assets/scripts/main.js
+2025-09-29T10:02:18 • `site-scaffold-001` • **FrontendDeveloper** → Implement /project/src/pages/index.html per /docs/site-spec.md (hero, #disciplines cards, #contact form, skip link to #main, semantic landmarks) and add base responsive styles in /project/src/assets/styles/main.css (WCAG AA).
+2025-09-29T10:02:35 • `site-scaffold-001` • **FrontendDeveloper** → Implement /project/src/pages/services/{frontend,backend,robotics}.html; each with hero, offerings list, mini case studies, CTA back to '/#disciplines'; keep shared header/footer and active nav
+2025-09-29T10:02:54 • `site-scaffold-001` • **FrontendDeveloper** → Implement /project/src/pages/about.html with story, values, leadership highlights, CTA to '/#contact'; consistent header/footer
+2025-09-29T10:03:05 • `site-scaffold-001` • **FrontendDeveloper** → Update /project/src/assets/scripts/main.js: smooth internal anchor scroll, required-fields guard for #contact form, simple mobile menu toggle
+2025-09-29T10:03:15 • `site-scaffold-001` • **GitWorkflow** → Stage all changes and commit with message 'feat(site): scaffold pages, base styles, minimal JS for consultancy'
+
 ```
 
 When finished, Router appends a final block:
@@ -58,7 +59,7 @@ When finished, Router appends a final block:
 Scaffolded the consultancy site; implemented home, three service pages, about, base
 ```
 
-B) docs/router_log.jsonl (structured log; one JSON per line)
+B) /docs/router_log.jsonl (structured log; one JSON per line)
 
 Example lines:
 ```
@@ -71,7 +72,7 @@ Example lines:
 {"ts":"2025-09-29T10:03:20","workflow_id":"site-scaffold-001","type":"done","summary":"Scaffolded the consultancy site; implemented home, three service pages, about, base CSS/JS; committed initial version."}
 ```
 
-C) 'docs/CHANGELOG.md' (per-run completion entry)
+C) '/docs/CHANGELOG.md' (per-run completion entry)
 ```
 ## 2025-09-29T10:03:20 — Workflow site-scaffold-001 Completed
 Scaffolded the consultancy site; implemented home, three service pages, about, bas
@@ -99,7 +100,7 @@ Scaffolded the consultancy site; implemented home, three service pages, about, b
 User → TaskRouter (chat, plain text): high-level brief (one message).
 TaskRouter → Router (HTTP JSON): first 'SubAgent: instruction' with '{auto_loop:true, from_taskrouter:true, workflow_id}'.
 Router ↔ TaskRouter (HTTP JSON): loop next steps until 'DONE'.
-Router → disk: writes 'docs/build-summary.md', 'docs/router_log.jsonl', and 'docs/CHANGELOG.md'.
+Router → disk: writes /docs/build-summary.md, /docs/router_log.jsonl, and /docs/CHANGELOG.md.
 TaskRouter → User (chat): short “kicked off” ack at start, 'DONE + summary' at the end.
 
 This is the full auto-run flow from a single, human-readable prompt.

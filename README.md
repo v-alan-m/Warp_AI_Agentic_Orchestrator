@@ -56,18 +56,18 @@ export ROUTER_MAX_STEPS=10                                       # safety cap fo
 
 ## 🧩 Warp Settings (UI, Option B)
 **Add MCP server**  
-- Settings → Agents/MCP Servers → **Add**
+- Settings → AI → **MCP Servers** → **+ Add**
   - Name: `router-mcp`
   - Type: `HTTP`
   - URL: `http://localhost:8085/route`
 
 **Create profiles** (names must match):
-- `TaskRouter` (orchestrator, **allowed_mcp_servers: [router-mcp]**)
+- `TaskRouter` (orchestrator, **Allowed MCP Servers: [router-mcp]**)
 - `FileCreator`, `FrontendDeveloper`, `BackendDeveloper`, `TestRunner`, `GitWorkflow`, `UIDesigner`, `UXResearcher`, `SprintPrioritizer`, `RapidPrototyper`  
-Give each its system prompt and **restrict permissions** (e.g., GitWorkflow = git-only MCP, no shell; FileCreator = file write, no shell).
+Give each minimal permissions (e.g., GitWorkflow = git-only MCP, no shell; FileCreator = file write, no shell).
 
-**TaskRouter system prompt (core excerpt)**  
-> The user will give a high-level brief. You MUST convert it into the first routing line and IMMEDIATELY call `router-mcp` with:
+**TaskRouter system behavior (core excerpt)**  
+> Convert the user’s high-level brief into the first routing line and IMMEDIATELY call `router-mcp` with:
 > ```json
 > {
 >   "task": "<SubAgentName>: <refined instruction>",
@@ -81,6 +81,67 @@ Give each its system prompt and **restrict permissions** (e.g., GitWorkflow = gi
 > DONE
 > <1–3 sentence final summary>
 > ```
+
+---
+
+## 🖥️ Warp UI Setup (Profiles, MCP Servers, Rules)
+
+> These steps make Warp the **caller** of the LLM while your Router MCP orchestrates and logs.
+
+### 1) Add MCP Servers
+- Open **Warp → Settings → AI → MCP Servers → + Add**.
+  - Add `router-mcp` → `http://localhost:8085/route`.
+  - (Optional) Add your task tools:  
+    - `file-mcp` (file ops)  
+    - `git-mcp` (git ops)  
+    - `test-mcp` (test runner)  
+    - `superdesign-mcp` (design previews)
+
+### 2) Create Agent Profiles
+- Open **Warp → Settings → AI → Profiles → + Add**.
+- Create profiles with these **Allowed MCP Servers** and **Permissions**:
+  - **TaskRouter** → Allowed: `router-mcp`; *no* file write; *no* execute commands.
+  - **FileCreator** → Allowed: `file-mcp`; file read/write **on**, execute commands **off**.
+  - **FrontendDeveloper** → Allowed: `file-mcp`; file read/write **on**, execute **off**.
+  - **BackendDeveloper** → Allowed: `file-mcp`; file read/write **on**, execute **off**.
+  - **GitWorkflow** → Allowed: `git-mcp`; file write **off**, execute **off**.
+  - **TestRunner** → Allowed: `test-mcp`; file write **off**, execute **off**.
+  - **UIDesigner** → Allowed: `superdesign-mcp` (+ `file-mcp` if you want to save artifacts); file read/write **on**.
+  - **UXResearcher** → Allowed: `superdesign-mcp` (+ `file-mcp` if you want to save artifacts); file read/write **on**.
+  - **SprintPrioritizer** → Allowed: `file-mcp`; file read/write **on**.
+  - **RapidPrototyper** → Allowed: `file-mcp`; file read/write **on**.
+
+> **Model choice:** Sonnet (latest) for TaskRouter/FE/BE/FileCreator; Haiku for GitWorkflow/TestRunner. You can set model per profile in the UI.
+
+### 3) Add Agent **Rules** (acts like system prompts)
+- Open **Warp Drive → Rules** (left sidebar), create one Rule per profile with these titles:
+  - `TaskRouter — Orchestrator Policy`
+  - `FileCreator — File Ops Policy`
+  - `FrontendDeveloper — UI Policy`
+  - `BackendDeveloper — API Policy`
+  - `GitWorkflow — Safe Git Policy`
+  - `TestRunner — Testing Policy`
+  - `UIDesigner — Design Artifacts Policy`
+  - `UXResearcher — Research Artifacts Policy`
+  - `SprintPrioritizer — Planning Policy`
+  - `RapidPrototyper — Prototype Policy`
+- Paste the contents from `warp_config/prompts/*.md` (we provided ready-to-paste texts earlier).
+- **Tip:** Keep these Rule texts mirrored in git for version control.
+
+### 4) Handoff Behavior (automated)
+- Your `router_mcp.py` **auto-injects** the correct Rule on every step and requires the agent to acknowledge:
+  ```
+  rules loaded (agent=<Role> | rule=<Rule Title>)
+  ```
+- No extra user action needed in chat; the Router guarantees each profile loads its Rule before executing.
+
+### 5) Sanity Check
+- Start the Router MCP:
+  ```bash
+  ./orchestrator.sh
+  ```
+- In Warp, open the **TaskRouter** chat and paste the kickoff prompt from the Example Workflow (below).
+- Confirm logs appear in `/docs/build-summary.md` and `/docs/router_log.jsonl`.
 
 ---
 
@@ -155,7 +216,7 @@ Scaffolded the consultancy site; implemented home, three service pages, about, b
   - TaskRouter emits `DONE`.
   - Router enforces `ROUTER_MAX_STEPS` as a hard cap.
 - **Auditability**: Steps + final summaries persisted to disk.
-- **Isolation**: Keep work under `project/`; specs in `/docs/site-spec.md`.
+- **Isolation**: Keep work under `/project/`; specs in `/docs/site-spec.md`.
 
 ---
 
@@ -171,7 +232,7 @@ Scaffolded the consultancy site; implemented home, three service pages, about, b
 ## 🧰 Troubleshooting
 - **Router not reachable** → `curl http://localhost:8085/health`; check port/process/firewall.  
 - **No logs** → ensure `ROUTER_LOG_DIR` exists/writable; launcher creates files.  
-- **Profiles can’t call router** → add `router-mcp` to TaskRouter’s `allowed_mcp_servers`.  
+- **Profiles can’t call router** → add `router-mcp` to TaskRouter’s **Allowed MCP Servers**.  
 - **Workflow stalls** → inspect `/docs/router_log.jsonl` for `invalid format` / `unknown_agent`.  
 - **Infinite loop risk** → keep `ROUTER_MAX_STEPS` (default 10); confirm TaskRouter prompt includes `DONE`.
 
@@ -185,4 +246,3 @@ Scaffolded the consultancy site; implemented home, three service pages, about, b
 Happy building! 🛠️✨
 
 ⚠️ This project is not open source. Use is prohibited without explicit permission. Contact me for licensing options.
-

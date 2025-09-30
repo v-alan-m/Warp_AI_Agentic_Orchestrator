@@ -44,7 +44,7 @@ LOG_DIR = os.getenv("ROUTER_LOG_DIR", os.path.join(os.path.dirname(__file__), "d
 os.makedirs(LOG_DIR, exist_ok=True)
 
 BUILD_SUMMARY_MD = os.path.join(LOG_DIR, "build-summary.md")
-CHANGELOG_MD     = os.path.join(LOG_DIR, "CHANGELOG.md")
+CHANGELOG_MD = os.path.join(LOG_DIR, "CHANGELOG.md")
 ROUTER_LOG_JSONL = os.path.join(LOG_DIR, "router_log.jsonl")
 
 # Touch files so tails don’t fail
@@ -58,44 +58,46 @@ ENFORCE_RULE_ACK = os.getenv("ROUTER_ENFORCE_RULE_ACK", "true").lower() in ("1",
 
 # Maps human routing names to your Warp profile keys (adjust to your setup)
 SUB_AGENTS = {
-    "FileCreator":       "file-creator",
-    "GitWorkflow":       "git-workflow",
-    "TestRunner":        "test-runner",
+    "FileCreator": "file-creator",
+    "GitWorkflow": "git-workflow",
+    "TestRunner": "test-runner",
     "FrontendDeveloper": "frontend-developer",
-    "BackendDeveloper":  "backend-developer",
-    "UIDesigner":        "ui-designer",
+    "BackendDeveloper": "backend-developer",
+    "UIDesigner": "ui-designer",
     "SprintPrioritizer": "sprint-prioritizer",
-    "RapidPrototyper":   "rapid-prototyper",
-    "UXResearcher":      "ux-researcher",
+    "RapidPrototyper": "rapid-prototyper",
+    "UXResearcher": "ux-researcher",
 }
 
 # Warp Rule titles to apply per sub-agent
 RULE_TITLES = {
-    "FileCreator":       "FileCreator — File Ops Policy",
-    "GitWorkflow":       "GitWorkflow — Safe Git Policy",
-    "TestRunner":        "TestRunner — Testing Policy",
+    "FileCreator": "FileCreator — File Ops Policy",
+    "GitWorkflow": "GitWorkflow — Safe Git Policy",
+    "TestRunner": "TestRunner — Testing Policy",
     "FrontendDeveloper": "FrontendDeveloper — UI Policy",
-    "BackendDeveloper":  "BackendDeveloper — API Policy",
-    "UIDesigner":        "UIDesigner — Design Artifacts Policy",
-    "UXResearcher":      "UXResearcher — Research Artifacts Policy",
+    "BackendDeveloper": "BackendDeveloper — API Policy",
+    "UIDesigner": "UIDesigner — Design Artifacts Policy",
+    "UXResearcher": "UXResearcher — Research Artifacts Policy",
     "SprintPrioritizer": "SprintPrioritizer — Planning Policy",
-    "RapidPrototyper":   "RapidPrototyper — Prototype Policy",
+    "RapidPrototyper": "RapidPrototyper — Prototype Policy",
 }
 
-ACK_PATTERN   = r'^rules loaded \(agent=(?P<agent>[^|]+)\s*\|\s*rule=(?P<rule>.+)\)$'
+ACK_PATTERN = r'^rules loaded \(agent=(?P<agent>[^|]+)\s*\|\s*rule=(?P<rule>.+)\)$'
 MAX_ACK_RETRY = 1
 
 ROUTING_LINE_RE = re.compile(r"^\s*([A-Za-z][A-Za-z0-9_-]+)\s*:\s*(.+)$", re.DOTALL)
+
 
 # -----------------------------
 # Models
 # -----------------------------
 
 class RouteRequest(BaseModel):
-    task: str                        # "SubAgent: instruction" or "DONE\nsummary"
-    auto_loop: bool = False          # true: TaskRouter loop until DONE
+    task: str  # "SubAgent: instruction" or "DONE\nsummary"
+    auto_loop: bool = False  # true: TaskRouter loop until DONE
     workflow_id: Optional[str] = None
-    from_taskrouter: bool = False    # kickoff came from TaskRouter
+    from_taskrouter: bool = False  # kickoff came from TaskRouter
+
 
 class RouteResponse(BaseModel):
     ok: bool
@@ -105,6 +107,7 @@ class RouteResponse(BaseModel):
     message: Optional[str] = None
     done: bool = False
 
+
 # -----------------------------
 # Utilities
 # -----------------------------
@@ -112,23 +115,28 @@ class RouteResponse(BaseModel):
 def ts() -> str:
     return datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
+
 def append_text(path: str, text: str) -> None:
     with open(path, "a", encoding="utf-8") as fh:
         fh.write(text)
         if not text.endswith("\n"):
             fh.write("\n")
 
+
 def log_event_jsonl(obj: dict) -> None:
     line = json.dumps(obj, ensure_ascii=False)
     with open(ROUTER_LOG_JSONL, "a", encoding="utf-8") as fh:
         fh.write(line + "\n")
 
+
 def md_step_line(workflow_id: str, step: int, agent: str, instruction: str) -> str:
     return f"- {ts()} • `{workflow_id}` • **{agent}** → {instruction}\n"
 
+
 def finalize_markdown(workflow_id: str, summary: str) -> None:
     append_text(BUILD_SUMMARY_MD, f"\n### {ts()} — Final Summary ({workflow_id})\n{summary}\n")
-    append_text(CHANGELOG_MD,      f"## {ts()} — Workflow {workflow_id} Completed\n{summary}\n")
+    append_text(CHANGELOG_MD, f"## {ts()} — Workflow {workflow_id} Completed\n{summary}\n")
+
 
 def ensure_workflow_id(req: RouteRequest) -> str:
     if req.workflow_id:
@@ -136,6 +144,7 @@ def ensure_workflow_id(req: RouteRequest) -> str:
     # Generate simple kebab id from first words of task
     base = re.sub(r"[^a-z0-9]+", "-", req.task.lower()).strip("-")
     return f"wf-{base[:24]}-{int(time.time())}"
+
 
 def guard_instruction(sub_agent: str, raw_instruction: str) -> str:
     """Build guarded instruction with explicit SubAgent prefix + rule application + exact ack line."""
@@ -151,12 +160,14 @@ def guard_instruction(sub_agent: str, raw_instruction: str) -> str:
     lines.append(f"Task: {raw_instruction}")
     return "\n".join(lines)
 
+
 def parse_routing_line(task: str) -> Tuple[str, str]:
     """Return (sub_agent, instruction) or raise 400."""
     m = ROUTING_LINE_RE.match(task.strip())
     if not m:
         raise HTTPException(status_code=400, detail="invalid_format: expected 'SubAgent: instruction'")
     return m.group(1), m.group(2)
+
 
 # -----------------------------
 # INTEGRATION HOOKS (replace with real Warp calls)
@@ -190,6 +201,7 @@ def call_sub_agent(agent_key: str, guarded_instruction: str) -> str:
     ])
     return faux_result
 
+
 def call_taskrouter_next_step(prev_agent: str, agent_response: str) -> str:
     """
     TODO: Ask your TaskRouter (in Warp) for the *next* routing line.
@@ -213,6 +225,7 @@ def call_taskrouter_next_step(prev_agent: str, agent_response: str) -> str:
     # Default next step
     return "FrontendDeveloper: Implement /project/src/pages/index.html per /docs/site-spec.md"
 
+
 # -----------------------------
 # Core routing with auto-loop
 # -----------------------------
@@ -220,6 +233,7 @@ def call_taskrouter_next_step(prev_agent: str, agent_response: str) -> str:
 @APP.get("/health")
 def health():
     return {"ok": True, "ts": ts()}
+
 
 @APP.post("/route", response_model=RouteResponse)
 def route_task(request: RouteRequest):
@@ -279,7 +293,8 @@ def route_task(request: RouteRequest):
         if ENFORCE_RULE_ACK and RULE_TITLES.get(sub_agent):
             first_line = (agent_response or "").splitlines()[0].strip()
             m = re.match(ACK_PATTERN, first_line)
-            ok_ack = m and (m.group("agent").strip() == sub_agent) and (m.group("rule").strip() == RULE_TITLES[sub_agent])
+            ok_ack = m and (m.group("agent").strip() == sub_agent) and (
+                        m.group("rule").strip() == RULE_TITLES[sub_agent])
             if not ok_ack:
                 log_event_jsonl({
                     "ts": ts(),
@@ -287,7 +302,7 @@ def route_task(request: RouteRequest):
                     "type": "warn",
                     "agent": sub_agent,
                     "warning": "rule_ack_missing_or_mismatch",
-                    "expected": f"rules loaded (agent={sub_agent} | rule={RULE_TITLES.get(sub_agent,'')})",
+                    "expected": f"rules loaded (agent={sub_agent} | rule={RULE_TITLES.get(sub_agent, '')})",
                     "received": first_line
                 })
                 # Retry once with same instruction (idempotent)
@@ -297,7 +312,8 @@ def route_task(request: RouteRequest):
                     agent_response = call_sub_agent(agent_key, guarded_instruction)
                     first_line = (agent_response or "").splitlines()[0].strip()
                     m = re.match(ACK_PATTERN, first_line)
-                    ok_ack = m and (m.group("agent").strip() == sub_agent) and (m.group("rule").strip() == RULE_TITLES[sub_agent])
+                    ok_ack = m and (m.group("agent").strip() == sub_agent) and (
+                                m.group("rule").strip() == RULE_TITLES[sub_agent])
 
         # Persist agent response (truncated in JSONL for sanity)
         log_event_jsonl({
@@ -310,7 +326,8 @@ def route_task(request: RouteRequest):
 
         # Auto-loop end?
         if not request.auto_loop:
-            return RouteResponse(ok=True, workflow_id=workflow_id, step=step, agent=sub_agent, message="step_complete", done=False)
+            return RouteResponse(ok=True, workflow_id=workflow_id, step=step, agent=sub_agent, message="step_complete",
+                                 done=False)
 
         # Ask TaskRouter for next routing line (INTEGRATE THIS WITH WARP)
         next_task = call_taskrouter_next_step(sub_agent, agent_response).strip()
@@ -320,7 +337,8 @@ def route_task(request: RouteRequest):
             final_summary = next_task.split("\n", 1)[1] if "\n" in next_task else ""
             finalize_markdown(workflow_id, final_summary)
             log_event_jsonl({"ts": ts(), "workflow_id": workflow_id, "type": "done", "summary": final_summary})
-            return RouteResponse(ok=True, workflow_id=workflow_id, step=step, agent=sub_agent, done=True, message="done")
+            return RouteResponse(ok=True, workflow_id=workflow_id, step=step, agent=sub_agent, done=True,
+                                 message="done")
 
         # Otherwise continue
         current_task = next_task
@@ -328,5 +346,6 @@ def route_task(request: RouteRequest):
 
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("ROUTER_PORT", "8085"))
     uvicorn.run("router_mcp:APP", host="0.0.0.0", port=port, reload=False)

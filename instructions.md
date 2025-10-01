@@ -1,6 +1,148 @@
-1) What the user types in Warp (TaskRouter chat)
-E.g:
-```
+# ✅ Works-First-Time Setup Checklist (Warp AI Agentic Orchestrator)
+
+> Follow these steps **in order** so your first run succeeds.
+
+---
+
+## 0) One-time prerequisites
+- Install **Python 3.10+**, **Node 18+**, and **Warp (latest)**.
+- Clone the repo and ensure the structure exists (especially `/docs` and `/project/src`).
+- (Windows) Confirm Node tools are on PATH:
+  - `node -v`
+  - `npx -v`
+
+---
+
+## 1) Add your GitHub API key (PAT)
+Create a **fine-grained PAT** and make it available as an environment variable so Warp/MCP can read it.
+
+**PowerShell (Windows)**
+~~~powershell
+setx GITHUB_TOKEN "ghp_XXXXXXXXXXXXXXXXXXXX"
+~~~
+
+**Recommended minimal scopes**
+- **Contents (Read/Write)** – repo files/PR content
+- **Pull requests (Read/Write)**
+- **Issues** (optional, only if you’ll create issues)
+
+> Prefer exporting `GITHUB_TOKEN` in your shell/profile over hardcoding it in any JSON.
+
+---
+
+## 2) Start the Router MCP (orchestrator)
+Start this **before** wiring MCPs in Warp so the health check passes.
+
+**Install deps & run (Windows / PowerShell)**
+~~~powershell
+# From repo root (Warp_AI_Agentic_Orchestrator)
+pip install fastapi uvicorn pydantic
+
+# Optional safety/env:
+$env:ROUTER_LOG_DIR = "$PWD\docs"
+$env:ROUTER_MAX_STEPS = "10"
+$env:ROUTER_ENFORCE_RULE_ACK = "true"
+$env:ROUTER_PORT = "8085"
+
+# Launch (Windows)
+.\orchestrator.ps1
+# Expect: router prints health info; files appear/append in .\docs\
+~~~
+
+**Quick health check (new terminal)**
+~~~powershell
+curl http://localhost:8085/health
+~~~
+You should see something like:
+~~~json
+{ "ok": true, "ts": "..." }
+~~~
+
+---
+
+## 3) Add MCP servers in Warp (JSON one-shot)
+Open **Warp → Settings → AI → MCP Servers → JSON** and paste the **one-shot JSON** from your repo at:
+- `warp_config/warp-config.yaml`  ← *(copy the JSON block from that file and paste it into Warp’s MCP Servers JSON box)*
+
+**Before pasting, edit:**
+- Replace **absolute paths** (e.g., `"/absolute/path/to/Warp_AI_Agentic_Orchestrator/project"`) with your real path:
+  - Windows example: `C:\\Users\\you\\dev\\Warp_AI_Agentic_Orchestrator\\project`
+- Confirm the Router URL:
+  - `router-mcp` → `http://localhost:8085/route`
+- Ensure `"start_on_launch": true` for each entry.
+
+**After saving:**
+- Verify each server shows **Running** (or starts cleanly).
+- If a stdio server fails, use **View Logs** on that server for details.
+
+**You should see these servers:**
+- `file-mcp` (Official Filesystem, stdio)
+- `git-mcp` (cyanheads local git, stdio)
+- `github-mcp` (GitHub official, stdio; reads `GITHUB_TOKEN`)
+- `test-mcp` (privsim test runner, stdio)
+- `superdesign-mcp` (SuperDesign packaged MCP, stdio)
+- `router-mcp` (HTTP → your FastAPI router)
+
+---
+
+## 4) Add agent profiles in Warp
+Open **Warp → Settings → AI → Profiles** and create:
+
+`TaskRouter`, `FileCreator`, `FrontendDeveloper`, `BackendDeveloper`, `TestRunner`, `GitWorkflow`, `UIDesigner`, `UXResearcher`, `SprintPrioritizer`, `RapidPrototyper`
+
+For each profile:
+- **Allowed MCP Servers** — mirror exactly from:
+  - `warp_config/warp-agent-config.yaml`
+- **Permissions** — set least-privilege per that same YAML (no command execution).
+- **Model** — suggested defaults:
+  - Sonnet (latest) → TaskRouter, FileCreator, FrontendDeveloper, BackendDeveloper
+  - Haiku (latest) → GitWorkflow, TestRunner
+
+> Keep the YAML open side-by-side and mirror into the UI. **Names must match exactly.**
+
+---
+
+## 5) Add Rules (system guardrails) in Warp
+Open **Warp Drive → Rules** and create *one Rule per profile* with the titles:
+
+- `TaskRouter — Orchestrator Policy`
+- `FileCreator — File Ops Policy`
+- `FrontendDeveloper — UI Policy`
+- `BackendDeveloper — API Policy`
+- `GitWorkflow — Safe Git Policy`
+- `TestRunner — Testing Policy`
+- `UIDesigner — Design Artifacts Policy`
+- `UXResearcher — Research Artifacts Policy`
+- `SprintPrioritizer — Planning Policy`
+- `RapidPrototyper — Prototype Policy`
+
+Paste the content from:
+- `warp_config/prompts/*.md`  (each role → its Rule text)
+
+> You don’t need to mention Rules in chat — **router_mcp.py auto-injects** the correct Rule each step and **requires** the first line to acknowledge:
+>
+> `rules loaded (agent=<Role> | rule=<Rule Title>)`
+
+---
+
+## 6) Sanity checks (do these before first run)
+- **Filesystem root** — Ensure `file-mcp` args include the **absolute** path to your `/project` folder; otherwise file writes may fail.
+- **Working directories** — `git-mcp` and `test-mcp` should have `working_directory` set to your `/project` path.
+- **Docs writeable** — Router should append to:
+  - `/docs/build-summary.md`
+  - `/docs/router_log.jsonl`
+- **Local Git identity** (optional but recommended):
+~~~powershell
+git config user.name  "Your Name"
+git config user.email "you@example.com"
+~~~
+
+---
+
+## 7) Run the first prompt (TaskRouter chat)
+Open the **TaskRouter** profile chat in Warp and paste:
+
+~~~text
 workflow_id: site-scaffold-001
 
 Use /docs/site-spec.md as the source of truth. Execute the full build:
@@ -10,97 +152,39 @@ Use /docs/site-spec.md as the source of truth. Execute the full build:
 - Implement About and minimal JS
 - Commit safely
 
-Respond only with routing lines step-by-step internally via router-mcp (auto_loop:true).
+Respond only with routing lines internally via router-mcp (auto_loop:true).
 When complete, output:
 DONE
 <1–3 sentence final summary>
-```
+~~~
 
-- TaskRouter’s visible reply to user (short ack):
-	- Kicked off workflow (id: site-scaffold-001). I’ll summarize when done.
+**Expected:**
+- TaskRouter replies briefly: “Kicked off workflow …”
+- Router + TaskRouter loop (silent) until `DONE`
+- Logs populate:
+  - `/docs/build-summary.md`
+  - `/docs/router_log.jsonl`
+  - `/docs/CHANGELOG.md` (upon completion)
+- Final TaskRouter chat shows:
+  ~~~text
+  DONE
+  <short summary>
+  ~~~
 
+---
 
-2) What TaskRouter sends to Router MCP (its internal tool call)
+## If anything fails
+- **Router health** — `curl http://localhost:8085/health`
+- **Warp MCP logs** — Settings → AI → MCP Servers → (server) → **View Logs**
+- **Ack mismatch** — Ensure Warp Rule titles exactly match `RULE_TITLES` in `router_mcp.py`
+- **Path errors** — Double-check absolute paths (Windows escaping) and directory existence
+- **Git issues** — Ensure `git-mcp` `working_directory` points at an initialized repo (`git init`)
 
-Endpoint: 'POST http://localhost:8085/route'
-Body JSON (constructed by TaskRouter):
+---
 
-```
-{
-  "task": "FileCreator: Create folders /src/pages/services, /src/assets/styles, /src/assets/scripts and create files /src/pages/index.html, /src/pages/about.html, /src/pages/services/frontend.html, /src/pages/services/backend.html, /src/pages/services/robotics.html, /src/assets/styles/main.css, /src/assets/scripts/main.js",
-  "auto_loop": true,
-  "workflow_id": "site-scaffold-001",
-  "from_taskrouter": true
-}
-
-
-'task' = first routing line TaskRouter chose from your brief.
-'auto_loop:true' + 'from_taskrouter:true '= guaranteed autonomous run.
-'workflow_id' = trace ID used in logs.
-```
-
-3) What Router writes during execution (your persisted logs)
-A) '/docs/build-summary.md' (human log)
-
-Example lines as the flow progresses:
-```
-2025-09-29T10:02:11 • `site-scaffold-001` • **FileCreator** → Create folders /project/src/pages/services, /project/src/assets/styles, /project/src/assets/scripts and create files /project/src/pages/index.html, /project/src/pages/about.html, /project/src/pages/services/frontend.html, /project/src/pages/services/backend.html, /project/src/pages/services/robotics.html, /project/src/assets/styles/main.css, /project/src/assets/scripts/main.js
-2025-09-29T10:02:18 • `site-scaffold-001` • **FrontendDeveloper** → Implement /project/src/pages/index.html per /docs/site-spec.md (hero, #disciplines cards, #contact form, skip link to #main, semantic landmarks) and add base responsive styles in /project/src/assets/styles/main.css (WCAG AA).
-2025-09-29T10:02:35 • `site-scaffold-001` • **FrontendDeveloper** → Implement /project/src/pages/services/{frontend,backend,robotics}.html; each with hero, offerings list, mini case studies, CTA back to '/#disciplines'; keep shared header/footer and active nav
-2025-09-29T10:02:54 • `site-scaffold-001` • **FrontendDeveloper** → Implement /project/src/pages/about.html with story, values, leadership highlights, CTA to '/#contact'; consistent header/footer
-2025-09-29T10:03:05 • `site-scaffold-001` • **FrontendDeveloper** → Update /project/src/assets/scripts/main.js: smooth internal anchor scroll, required-fields guard for #contact form, simple mobile menu toggle
-2025-09-29T10:03:15 • `site-scaffold-001` • **GitWorkflow** → Stage all changes and commit with message 'feat(site): scaffold pages, base styles, minimal JS for consultancy'
-
-```
-
-When finished, Router appends a final block:
-```
-### 2025-09-29T10:03:20 — Final Summary (site-scaffold-001)
-Scaffolded the consultancy site; implemented home, three service pages, about, base
-```
-
-B) /docs/router_log.jsonl (structured log; one JSON per line)
-
-Example lines:
-```
-{"ts":"2025-09-29T10:02:11","workflow_id":"site-scaffold-001","type":"step","step":1,"agent":"FileCreator","instruction":"Create folders ..."}
-{"ts":"2025-09-29T10:02:18","workflow_id":"site-scaffold-001","type":"step","step":2,"agent":"FrontendDeveloper","instruction":"Implement /src/pages/index.html ..."}
-{"ts":"2025-09-29T10:02:35","workflow_id":"site-scaffold-001","type":"step","step":3,"agent":"FrontendDeveloper","instruction":"Implement service pages ..."}
-{"ts":"2025-09-29T10:02:54","workflow_id":"site-scaffold-001","type":"step","step":4,"agent":"FrontendDeveloper","instruction":"Implement about ..."}
-{"ts":"2025-09-29T10:03:05","workflow_id":"site-scaffold-001","type":"step","step":5,"agent":"FrontendDeveloper","instruction":"Update main.js ..."}
-{"ts":"2025-09-29T10:03:15","workflow_id":"site-scaffold-001","type":"step","step":6,"agent":"GitWorkflow","instruction":"Stage and commit ..."}
-{"ts":"2025-09-29T10:03:20","workflow_id":"site-scaffold-001","type":"done","summary":"Scaffolded the consultancy site; implemented home, three service pages, about, base CSS/JS; committed initial version."}
-```
-
-C) '/docs/CHANGELOG.md' (per-run completion entry)
-```
-## 2025-09-29T10:03:20 — Workflow site-scaffold-001 Completed
-Scaffolded the consultancy site; implemented home, three service pages, about, bas
-```
-
-4) What TaskRouter does mid-flow (invisible to the user)
-
-- After each sub-agent returns, Router calls TaskRouter with the result.
-- TaskRouter responds with the next routing line (e.g., tell FrontendDeveloper to implement services).
-- Router logs the step, forwards to that sub-agent, and repeats.
-
-You don’t see these intermediate messages in chat; they’re recorded in the logs above.
-
-
-5) What the user finally sees in Warp (TaskRouter chat)
-
-When the Router signals completion back to TaskRouter, TaskRouter prints only the DONE block:
-```
-DONE
-Scaffolded the consultancy site; implemented home, three service pages, about, base CSS/JS; committed initial version.
-```
-
-6) Summary of the “who sends what where”
-
-User → TaskRouter (chat, plain text): high-level brief (one message).
-TaskRouter → Router (HTTP JSON): first 'SubAgent: instruction' with '{auto_loop:true, from_taskrouter:true, workflow_id}'.
-Router ↔ TaskRouter (HTTP JSON): loop next steps until 'DONE'.
-Router → disk: writes /docs/build-summary.md, /docs/router_log.jsonl, and /docs/CHANGELOG.md.
-TaskRouter → User (chat): short “kicked off” ack at start, 'DONE + summary' at the end.
-
-This is the full auto-run flow from a single, human-readable prompt.
+## Your original plan (with fixes)
+- Add GitHub API key and add to MCP server → ✅ Better: export **`GITHUB_TOKEN`** in your shell; MCP inherits it
+- Add MCP servers into Warp config → ✅ Paste JSON from `warp_config/warp-config.yaml` (fix absolute paths)
+- Add agents to Warp config → ✅ Create profiles in Warp UI, mirror `warp-agent-config.yaml`, then add **Rules**
+- Run orchestrator.ps1 → ✅ Start Router **before** first prompt
+- Run first prompt → ✅ Paste into **TaskRouter** chat (auto-loop to `DONE`)

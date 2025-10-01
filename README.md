@@ -90,6 +90,9 @@ export ROUTER_PORT=8085                 # default 8085
 
 > Replace all placeholder absolute paths with your real path to `Warp_AI_Agentic_Orchestrator/project`, and set a real `GITHUB_TOKEN` in your shell.
 
+> `IMPORTANT`:  Before starting update the absolute path in the file-mcp server
+> > **So the agent can only edit files inside that folder and never anything outside if it**
+
 ### 2) Profiles (Agents)
 - Open **Warp → Settings → AI → Profiles + Add**
 - Create profiles named exactly:

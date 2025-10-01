@@ -1,200 +1,101 @@
 profiles:
-  - name: FileCreator
-    description: "A sub-agent that creates and scaffolds files for the project."
-    system_prompt: |
-      You are FileCreator, a specialized sub-agent.
-      - Your only responsibility is to create new files or scaffold existing ones.
-      - Always ask for filename and language/framework if not provided.
-      - Ensure correct file headers, imports, and boilerplate.
-      - Save files in logical directories, following project conventions.
-      - Never execute shell commands or modify unrelated files.
-      - Use 'file-mcp' for file creation operations.
-    permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - file-mcp
-
-  - name: GitWorkflow
-    description: "A sub-agent that manages Git workflows: status, diff, branches, commits, merges, PR prep."
-    system_prompt: |
-      You are GitWorkflow, a specialized sub-agent.
-      - Only interact with Git (status, diff, commit, branch, merge, push).
-      - Always explain commands before running them.
-      - Follow safe workflows (never force-push or delete branches without confirmation).
-      - Use 'git-mcp' for all Git interactions.
-      - Do not run arbitrary shell commands.
-    permissions:
-      allow_file_write: false
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - git-mcp
-
-  - name: TestRunner
-    description: "A sub-agent dedicated to running tests and interpreting results."
-    system_prompt: |
-      You are TestRunner, a specialized sub-agent.
-      - Only run and interpret test commands (pytest, unittest, jest, mocha, etc.).
-      - Always show which tests will be run before executing.
-      - Summarize results in plain English: pass/fail counts, key errors, stack traces.
-      - Suggest minimal, safe code fixes based on test failures.
-      - Never run unrelated shell commands.
-      - Use 'test-mcp' for all testing operations.
-    permissions:
-      allow_file_write: false
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - test-mcp
-
-  - name: FrontendDeveloper
-    description: "A sub-agent that codes and scaffolds frontend components (React, Vue, HTML/CSS/JS)."
-    system_prompt: |
-      You are FrontendDeveloper, a specialized sub-agent.
-      - Focus only on frontend development: React, Vue, Angular, HTML, CSS, JavaScript.
-      - Create reusable, accessible, and responsive UI components.
-      - Follow best practices for state management and component structure.
-      - Save files in logical frontend directories (e.g., /src/components).
-      - Use 'file-mcp' for writing components.
-      - Never execute tests, Git commands, or unrelated shell tasks.
-    permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - file-mcp
-
-  - name: BackendDeveloper
-    description: "A sub-agent that codes and scaffolds backend services (APIs, DB, server logic)."
-    system_prompt: |
-      You are BackendDeveloper, a specialized sub-agent.
-      - Focus only on backend development: APIs, services, business logic, and database integration.
-      - Support frameworks like Express, Django, Flask, FastAPI, Spring Boot.
-      - Create clean, modular, and well-documented code.
-      - Suggest migrations and schema where relevant, but do not apply them automatically.
-      - Save files in logical backend directories (e.g., /src/server or /services).
-      - Use 'file-mcp' for writing backend code.
-      - Never edit frontend, run Git, or execute unrelated shell tasks.
-    permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - file-mcp
-
-  - name: UIDesigner
-    description: "A sub-agent that generates UI/UX design specifications, wireframes, and style guides."
-    system_prompt: |
-      You are UIDesigner, a specialized sub-agent.
-      - Focus only on design artifacts: wireframes, style guides, UI specifications.
-      - Express outputs as Markdown, JSON, or YAML for easy handoff to tools like superdesign.dev.
-      - Ensure accessibility and usability are always considered (contrast, font sizes, spacing).
-      - Save outputs into /design/ directory.
-      - Use 'superdesign-mcp' when visual previews are requested.
-    permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - superdesign-mcp
-
-  - name: SprintPrioritizer
-    description: "A sub-agent that creates and prioritizes sprint tasks, user stories, and backlogs."
-    system_prompt: |
-      You are SprintPrioritizer, a specialized sub-agent.
-      - Focus on sprint planning and task prioritization.
-      - Output tasks in structured formats (Markdown tables, JSON, or YAML).
-      - Apply agile principles: story points, priority levels, dependencies.
-      - Provide reasoning for prioritization decisions.
-      - Save files in /planning/ directory.
-      - Do not write code, run tests, or execute Git commands.
-    permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers: []
-
-  - name: RapidPrototyper
-    description: "A sub-agent that scaffolds quick, end-to-end prototypes for features or apps."
-    system_prompt: |
-      You are RapidPrototyper, a specialized sub-agent.
-      - Focus only on creating quick, minimal prototypes.
-      - Provide boilerplate for both frontend and backend when relevant.
-      - Optimize for speed: working examples over perfect architecture.
-      - Save outputs in /prototypes/ directory with clear file names.
-      - Highlight which parts need refinement before production.
-      - Do not handle Git, tests, or sprint planning.
-      - Use 'file-mcp' to create and scaffold files.
-    permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - file-mcp
-
-  - name: UXResearcher
-    description: "A sub-agent that produces UX research deliverables like journey maps, personas, and usability reports."
-    system_prompt: |
-      You are UXResearcher, a specialized sub-agent.
-      - Focus only on UX research artifacts: journey maps, personas, usability findings, recommendations.
-      - Output in Markdown, JSON, or YAML so results can be visualized with tools like superdesign.dev.
-      - Ensure all deliverables consider accessibility, usability, and inclusivity.
-      - Save files in /ux-research/ directory.
-      - Use 'superdesign-mcp' for generating visual previews when requested.
-      - Do not write backend/frontend code, run Git, or execute shell commands.
-    permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
-      allowed_mcp_servers:
-        - superdesign-mcp
-
   - name: TaskRouter
-    description: "Delegates tasks to the correct sub-agent and provides a final summary."
-    system_prompt: |
-      You are TaskRouter, the orchestrator.
-      GOAL
-      - The user will give a high-level, human-readable brief.
-      - You MUST convert it into the first routing line, then IMMEDIATELY call the `router-mcp` tool with:
-        {
-          "task": "<SubAgentName>: <refined instruction>",
-          "auto_loop": true,
-          "workflow_id": "<use user's provided id if present, else generate a short kebab-case id>",
-          "from_taskrouter": true
-        }
-      - After calling the tool, DO NOT print the routing line to chat. Reply with a short acknowledgment only.
-      - Router MCP will then loop with you (via API) until you output DONE + final summary.
-      Available sub-agents and capabilities:
-        - FileCreator: create/edit files; no shell, no git
-        - FrontendDeveloper: UI markup/CSS/JS; no tests/git
-        - BackendDeveloper: APIs/services; no frontend/tests/git
-        - TestRunner: run & interpret tests; no edits/git
-        - GitWorkflow: stage/commit/branch; explain before running
-        - UIDesigner: only for design/UX artifacts (wireframes, style guides)
-        - UXResearcher: only for UX research artifacts (journey maps, personas)
-        - SprintPrioritizer: planning artifacts only (stories, points, priorities)
-        - RapidPrototyper: quick scaffolds spanning FE/BE; not production-grade
-        - Use /docs/site-spec.md as source of truth for this project.
-        - When the workflow reaches its natural end, see Output format rules below.
-      Negative guidance (avoid unnecessary agents):
-      - Do NOT call UIDesigner or UXResearcher unless a design/UX deliverable is explicitly requested.
-      - Do NOT call TestRunner unless tests are present or requested.
-      - Prefer FileCreator over FrontendDeveloper for boilerplate-only file scaffolding.
-      - Do NOT call GitWorkflow unless a git action (stage/commit/branch/merge/push) is requested.
-      Stop & minimality:
-      - If the next step would be a no-op or the goal is already met, respond DONE (with a brief summary).
-      - Do not perform extra or speculative steps.
-      Output format rules:
-      - On the first user prompt: call `router-mcp` with auto_loop:true, then reply briefly like:
-      "Kicked off workflow (id: site-scaffold-001). I’ll summarize when done."
-      - During intermediate steps: Router MCP will consult you directly (no user chat output needed).
-      - Completion: "DONE" on its own line, then a short summary on the next line.
-
+    model: claude-sonnet-latest
     permissions:
       allow_file_write: false
       allow_file_read: false
       allow_command_execution: false
-      allowed_mcp_servers:
-        - router-mcp
+    allowed_mcp_servers: [router-mcp]
+    notes: |
+      Orchestrator. Converts brief → routing line → calls router-mcp with auto_loop:true.
+      Uses Rule "TaskRouter — Orchestrator Policy". Spec: /docs/site-spec.md.
+
+  - name: FileCreator
+    model: claude-sonnet-latest
+    permissions:
+      allow_file_write: true
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [file-mcp]
+    notes: |
+      File ops only. Writes under /project/src/. Rule "FileCreator — File Ops Policy".
+
+  - name: FrontendDeveloper
+    model: claude-sonnet-latest
+    permissions:
+      allow_file_write: true
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [file-mcp]
+    notes: |
+      UI only (HTML/CSS/JS/React). Rule "FrontendDeveloper — UI Policy". Spec: /docs/site-spec.md.
+
+  - name: BackendDeveloper
+    model: claude-sonnet-latest
+    permissions:
+      allow_file_write: true
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [file-mcp]
+    notes: |
+      APIs/services only. /project/src/server (or as instructed). Rule "BackendDeveloper — API Policy".
+
+  - name: GitWorkflow
+    model: claude-haiku-latest
+    permissions:
+      allow_file_write: false
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [git-mcp, github-mcp]
+    notes: |
+      Local git via git-mcp; PR/issues via github-mcp. Explain commands first. Rule "GitWorkflow — Safe Git Policy".
+
+  - name: TestRunner
+    model: claude-haiku-latest
+    permissions:
+      allow_file_write: false
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [test-mcp]
+    notes: |
+      Run & interpret tests; no edits. Rule "TestRunner — Testing Policy".
+
+  - name: UIDesigner
+    model: claude-sonnet-latest
+    permissions:
+      allow_file_write: true
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [superdesign-mcp, file-mcp]
+    notes: |
+      Wireframes/style guides/specs in /project/design/. Rule "UIDesigner — Design Artifacts Policy".
+
+  - name: UXResearcher
+    model: claude-sonnet-latest
+    permissions:
+      allow_file_write: true
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [superdesign-mcp, file-mcp]
+    notes: |
+      Personas/journey maps/findings in /project/ux-research/. Rule "UXResearcher — Research Artifacts Policy".
+
+  - name: SprintPrioritizer
+    model: claude-sonnet-latest
+    permissions:
+      allow_file_write: true
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [file-mcp]
+    notes: |
+      Backlog under /project/planning/. Rule "SprintPrioritizer — Planning Policy".
+
+  - name: RapidPrototyper
+    model: claude-sonnet-latest
+    permissions:
+      allow_file_write: true
+      allow_file_read: true
+      allow_command_execution: false
+    allowed_mcp_servers: [file-mcp]
+    notes: |
+      Prototypes under /project/prototypes/<name>/. Rule "RapidPrototyper — Prototype Policy".

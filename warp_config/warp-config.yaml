@@ -1,4 +1,49 @@
-mcp_servers:
-  - name: router-mcp
-    type: http
-    url: http://localhost:8085/route
+{
+  "mcpServers": {
+    "file-mcp": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/absolute/path/to/warp-orchestrator/project"],
+      "env": {},
+      "working_directory": null,
+      "start_on_launch": true
+    },
+    "git-mcp": {
+      "command": "npx",
+      "args": ["-y", "@cyanheads/git-mcp-server"],
+      "env": {
+        "GIT_SSH_COMMAND": "ssh -o StrictHostKeyChecking=no"
+      },
+      "working_directory": "/absolute/path/to/warp-orchestrator/project",
+      "start_on_launch": true
+    },
+    "github-mcp": {
+      "command": "npx",
+      "args": ["-y", "@github/github-mcp-server"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_your_fine_grained_PAT_here"
+      },
+      "working_directory": null,
+      "start_on_launch": true
+    },
+    "test-mcp": {
+      "command": "npx",
+      "args": ["-y", "test-runner-mcp"],
+      "env": {},
+      "working_directory": "/absolute/path/to/warp-orchestrator/project",
+      "start_on_launch": true
+    },
+    "superdesign-mcp": {
+      "command": "npx",
+      "args": ["-y", "@jonthebeef/superdesign-mcp"],
+      "env": {},
+      "working_directory": "/absolute/path/to/warp-orchestrator/project",
+      "start_on_launch": true
+    },
+    "router-mcp": {
+      "type": "http",
+      "url": "http://localhost:8085/route",
+      "headers": {},
+      "start_on_launch": true
+    }
+  }
+}

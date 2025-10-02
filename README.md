@@ -240,6 +240,15 @@ DONE
   - `docs/*` — logs + spec  
   - `project/src/*` — generated code
 
+### 📦 Central MCP Servers Store
+
+- `Important`: Some open-sourse repos such as test-mcp will have to be `cloned and run locally`, instead of using `npx`.
+  - Keep them in a `single shared folder outside your project` so you don’t re-clone per repo.
+  - For each MCP server, sometimes specific file paths will have to be referenced within the respective Warp MCP server config JSON 
+> Having dedicated MCP folder prevents having to change the stored path(s) in that MCP server JSON config, when changing projects.
+> > Note: The `working directory` value will still have to be changed when switching projects.
+
+
 ---
 
 ## ✅ Summary

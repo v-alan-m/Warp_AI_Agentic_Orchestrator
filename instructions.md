@@ -34,22 +34,24 @@ setx GITHUB_TOKEN "ghp_XXXXXXXXXXXXXXXXXXXX"
 Start this **before** wiring MCPs in Warp so the health check passes.
 
 **Install deps & run (Windows / PowerShell)**
+### 2.1) From repo root (Warp_AI_Agentic_Orchestrator)
 ~~~powershell
-# From repo root (Warp_AI_Agentic_Orchestrator)
 pip install fastapi uvicorn pydantic
-
-# Optional safety/env:
+~~~
+### 2.2) Optional safety/env:
+~~~powershell
 $env:ROUTER_LOG_DIR = "$PWD\docs"
 $env:ROUTER_MAX_STEPS = "10"
 $env:ROUTER_ENFORCE_RULE_ACK = "true"
 $env:ROUTER_PORT = "8085"
-
-# Launch (Windows)
-.\orchestrator.ps1
+~~~
+### 2.3) Launch (Windows - Powershell 7)
+~~~powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1~~~
 # Expect: router prints health info; files appear/append in .\docs\
 ~~~
 
-**Quick health check (new terminal)**
+### 2.4) Quick health check (new terminal)
 ~~~powershell
 curl http://localhost:8085/health
 ~~~
@@ -62,7 +64,7 @@ You should see something like:
 
 ## 3) Add MCP servers in Warp (JSON one-shot)
 Open **Warp → Settings → AI → MCP Servers → JSON** and paste the **one-shot JSON** from your repo at:
-- `warp_config/warp-config.yaml`  ← *(copy the JSON block from that file and paste it into Warp’s MCP Servers JSON box)*
+- `warp_config/warp-mcp-config.yaml`  ← *(copy the JSON block from that file and paste it into Warp’s MCP Servers JSON box)*
 
 **Before pasting, edit:**
 - Replace **absolute paths** (e.g., `"/absolute/path/to/Warp_AI_Agentic_Orchestrator/project"`) with your real path:
@@ -184,7 +186,7 @@ DONE
 
 ## Your original plan (with fixes)
 - Add GitHub API key and add to MCP server → ✅ Better: export **`GITHUB_TOKEN`** in your shell; MCP inherits it
-- Add MCP servers into Warp config → ✅ Paste JSON from `warp_config/warp-config.yaml` (fix absolute paths)
+- Add MCP servers into Warp config → ✅ Paste JSON from `warp_config/warp-mcp-config.yaml` (fix absolute paths)
 - Add agents to Warp config → ✅ Create profiles in Warp UI, mirror `warp-agent-config.yaml`, then add **Rules**
 - Run orchestrator.ps1 → ✅ Start Router **before** first prompt
 - Run first prompt → ✅ Paste into **TaskRouter** chat (auto-loop to `DONE`)

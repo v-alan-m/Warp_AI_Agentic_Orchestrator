@@ -11,7 +11,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROUTER="${SCRIPT_DIR}/router_mcp.py"
 LOG_DIR="${ROUTER_LOG_DIR:-${SCRIPT_DIR}/docs}"
 PORT="${ROUTER_PORT:-8085}"
-MAX_STEPS="${ROUTER_MAX_STEPS:-10}"
+MAX_STEPS="${ROUTER_MAX_STEPS:-17}"
 HEALTH_URL="http://localhost:${PORT}/health"
 PID_FILE="${SCRIPT_DIR}/.router_mcp.pid"
 

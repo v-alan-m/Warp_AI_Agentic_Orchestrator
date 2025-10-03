@@ -1,5 +1,5 @@
-# orchestrator.ps1
-# Start Router MCP (uvicorn) + wait for /health + tail logs (Windows/PowerShell)
+# orchestrator_safe.ps1
+# Minimal + AV-friendly: no hidden windows, no detached child, no jobs.
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
@@ -18,100 +18,36 @@ New-Item -ItemType Directory -Force -Path $DocsDir | Out-Null
   if (-not (Test-Path $p)) { New-Item -ItemType File -Path $p | Out-Null }
 }
 
-# --- Environment (edit as needed) ---
-if (-not $env:ROUTER_LOG_DIR)        { $env:ROUTER_LOG_DIR        = $DocsDir }
-if (-not $env:ROUTER_MAX_STEPS)      { $env:ROUTER_MAX_STEPS      = "10" }
+if (-not $env:ROUTER_LOG_DIR)         { $env:ROUTER_LOG_DIR = $DocsDir }
+if (-not $env:ROUTER_MAX_STEPS)       { $env:ROUTER_MAX_STEPS = "10" }
 if (-not $env:ROUTER_ENFORCE_RULE_ACK){ $env:ROUTER_ENFORCE_RULE_ACK = "true" }
-if (-not $env:ROUTER_PORT)           { $env:ROUTER_PORT           = "8085" }
+if (-not $env:ROUTER_PORT)            { $env:ROUTER_PORT = "8085" }
 
-$HealthUrl = "http://localhost:$($env:ROUTER_PORT)/health"
+$ProjectDirPosix  = ($ProjectDir -replace '\\','/')
+$ProjectDirWinEsc = ($ProjectDir -replace '\\','\\')
 
 Write-Host "LOG_DIR      : $($env:ROUTER_LOG_DIR)"
 Write-Host "MAX_STEPS    : $($env:ROUTER_MAX_STEPS)"
 Write-Host "RULE_ACK     : $($env:ROUTER_ENFORCE_RULE_ACK)"
 Write-Host "ROUTER_PORT  : $($env:ROUTER_PORT)"
-Write-Host "HEALTH URL   : $HealthUrl"
-Write-Host ""
-
-# --- Start uvicorn in a background job ---
-$RouterJob = Start-Job -Name "router-mcp" -ScriptBlock {
-  param($WorkingDir, $Port)
-  Set-Location $WorkingDir
-
-  # Check uvicorn availability (PowerShell-friendly)
-  $pyCheck = & python -c "import pkgutil; print('UVICORN_PRESENT=', pkgutil.find_loader('uvicorn') is not None)"
-  Write-Output $pyCheck
-
-  # Launch server (module import style is most reliable)
-  & python -m uvicorn router_mcp:APP --host 127.0.0.1 --port $Port --log-level info
-} -ArgumentList $ScriptDir, $env:ROUTER_PORT
-
-Start-Sleep -Milliseconds 200
-
-# --- Wait for /health (timeout ~ 60s) ---
-Write-Host "Waiting for router to become healthy..."
-$deadline = (Get-Date).AddSeconds(60)
-$healthy = $false
-
-while ((Get-Date) -lt $deadline) {
-  try {
-    $resp = Invoke-WebRequest -Uri $HealthUrl -UseBasicParsing -TimeoutSec 3
-    if ($resp.StatusCode -eq 200) { $healthy = $true; break }
-  } catch {
-    # ignore until deadline
-  }
-  Write-Host -NoNewline "."
-  Start-Sleep -Milliseconds 800
-}
-Write-Host ""
-
-if (-not $healthy) {
-  Write-Warning "Router did not become healthy within 60s."
-  Write-Host "Diagnostics:"
-  Write-Host "  * Confirm you're in the repo root: $WorkingDir"
-  Write-Host "  * Confirm router_mcp.py exists here and is importable."
-  Write-Host "  * Confirm python can import uvicorn: 'python -m pip install uvicorn fastapi pydantic'"
-  Write-Host "  * Check if port $($env:ROUTER_PORT) is in use: 'netstat -ano | findstr $($env:ROUTER_PORT)'"
-  Write-Host "  * Job output follows:"
-  Receive-Job -Id $RouterJob.Id -Keep | Write-Host
-  Stop-Job -Id $RouterJob.Id -ErrorAction SilentlyContinue
-  Exit 1
-}
-
-# --- NEW: Print normalized project paths for Profiles vs MCP Servers ---
-$ProjectDirPosix = ($ProjectDir -replace '\\','/')
-$ProjectDirWin   = $ProjectDir
 Write-Host ""
 Write-Host "===== Placement Guidance ====="
-Write-Host "Agent Profiles (use POSIX path with /):"
-Write-Host "  $ProjectDirPosix"
-Write-Host "MCP Servers (use Windows path with \\):"
-Write-Host "  $ProjectDirWin"
-Write-Host "Place/Reference:"
-Write-Host "  • Agent Profiles → Allowed paths / working notes should reference the POSIX-style path above."
-Write-Host "  • MCP Servers JSON (working_directory / filesystem roots) should use the Windows-style path above."
-Write-Host "==============================="
+Write-Host "Agent Profiles (use POSIX path with /):`n  $ProjectDirPosix"
+Write-Host "MCP Servers (use Windows path with double backslashes \\):`n  $ProjectDirWinEsc"
+Write-Host "================================"
 Write-Host ""
 
-Write-Host "✅ Router is healthy at $HealthUrl"
-Write-Host "Tailing logs: build-summary.md and router_log.jsonl (Ctrl+C to stop tails; server continues in job)"
+# Quick check uvicorn is present
+$uv = & python -c "import pkgutil; import sys; sys.exit(0 if pkgutil.find_loader('uvicorn') else 1)"; if ($LASTEXITCODE -ne 0) {
+  Write-Host "❌ uvicorn not found. Run:  python -m pip install uvicorn fastapi pydantic"
+  exit 1
+}
+
+Write-Host "Starting Router MCP (attached)..."
+Write-Host "Tip: Open another terminal to tail logs:"
+Write-Host "  Get-Content -Path `"$($DocsDir)\build-summary.md`" -Wait"
+Write-Host "  Get-Content -Path `"$($DocsDir)\router_log.jsonl`" -Wait"
 Write-Host ""
 
-# --- Tail logs (non-terminating) ---
-$BuildSummary = Join-Path $DocsDir "build-summary.md"
-$JsonLog      = Join-Path $DocsDir "router_log.jsonl"
-
-$Tail1 = Start-Job -Name "tail-summary" -ScriptBlock {
-  param($file)
-  Write-Host "[TAIL] $file"
-  Get-Content -Path $file -Wait -Encoding UTF8
-} -ArgumentList $BuildSummary
-
-$Tail2 = Start-Job -Name "tail-json" -ScriptBlock {
-  param($file)
-  Write-Host "[TAIL] $file"
-  Get-Content -Path $file -Wait -Encoding UTF8
-} -ArgumentList $JsonLog
-
-Write-Host "`n[Router stdout follows below as it runs...]`n"
-Receive-Job -Id $RouterJob.Id -Keep
+# Run in the foreground (visible). Stop with Ctrl+C or closing the window.
+python -m uvicorn router_mcp:APP --host 127.0.0.1 --port $env:ROUTER_PORT --log-level info --no-use-colors

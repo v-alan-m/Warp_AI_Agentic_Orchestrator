@@ -8,7 +8,7 @@ Set-StrictMode -Version Latest
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
-$DocsDir = Join-Path $ScriptDir "docs"
+$DocsDir    = Join-Path $ScriptDir "docs"
 $ProjectDir = Join-Path $ScriptDir "project"
 
 # Ensure docs directory & files exist (so tail doesn't fail)
@@ -19,10 +19,10 @@ New-Item -ItemType Directory -Force -Path $DocsDir | Out-Null
 }
 
 # --- Environment (edit as needed) ---
-if (-not $env:ROUTER_LOG_DIR) { $env:ROUTER_LOG_DIR = $DocsDir }
-if (-not $env:ROUTER_MAX_STEPS) { $env:ROUTER_MAX_STEPS = "17" }
-if (-not $env:ROUTER_ENFORCE_RULE_ACK) { $env:ROUTER_ENFORCE_RULE_ACK = "true" }
-if (-not $env:ROUTER_PORT) { $env:ROUTER_PORT = "8085" }
+if (-not $env:ROUTER_LOG_DIR)        { $env:ROUTER_LOG_DIR        = $DocsDir }
+if (-not $env:ROUTER_MAX_STEPS)      { $env:ROUTER_MAX_STEPS      = "10" }
+if (-not $env:ROUTER_ENFORCE_RULE_ACK){ $env:ROUTER_ENFORCE_RULE_ACK = "true" }
+if (-not $env:ROUTER_PORT)           { $env:ROUTER_PORT           = "8085" }
 
 $HealthUrl = "http://localhost:$($env:ROUTER_PORT)/health"
 
@@ -71,12 +71,27 @@ if (-not $healthy) {
   Write-Host "  * Confirm you're in the repo root: $WorkingDir"
   Write-Host "  * Confirm router_mcp.py exists here and is importable."
   Write-Host "  * Confirm python can import uvicorn: 'python -m pip install uvicorn fastapi pydantic'"
-  Write-Host "  * Check if port $Port is in use: 'netstat -ano | findstr $Port'"
+  Write-Host "  * Check if port $($env:ROUTER_PORT) is in use: 'netstat -ano | findstr $($env:ROUTER_PORT)'"
   Write-Host "  * Job output follows:"
   Receive-Job -Id $RouterJob.Id -Keep | Write-Host
   Stop-Job -Id $RouterJob.Id -ErrorAction SilentlyContinue
   Exit 1
 }
+
+# --- NEW: Print normalized project paths for Profiles vs MCP Servers ---
+$ProjectDirPosix = ($ProjectDir -replace '\\','/')
+$ProjectDirWin   = $ProjectDir
+Write-Host ""
+Write-Host "===== Placement Guidance ====="
+Write-Host "Agent Profiles (use POSIX path with /):"
+Write-Host "  $ProjectDirPosix"
+Write-Host "MCP Servers (use Windows path with \\):"
+Write-Host "  $ProjectDirWin"
+Write-Host "Place/Reference:"
+Write-Host "  • Agent Profiles → Allowed paths / working notes should reference the POSIX-style path above."
+Write-Host "  • MCP Servers JSON (working_directory / filesystem roots) should use the Windows-style path above."
+Write-Host "==============================="
+Write-Host ""
 
 Write-Host "✅ Router is healthy at $HealthUrl"
 Write-Host "Tailing logs: build-summary.md and router_log.jsonl (Ctrl+C to stop tails; server continues in job)"

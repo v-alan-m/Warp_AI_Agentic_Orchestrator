@@ -23,7 +23,7 @@ mkdir -p "$DOCS_DIR"
 
 # --- Environment (defaults; keep in sync with README) ---
 : "${ROUTER_LOG_DIR:=$DOCS_DIR}"
-: "${ROUTER_MAX_STEPS:=10}"
+: "${ROUTER_MAX_STEPS:=17}"
 : "${ROUTER_ENFORCE_RULE_ACK:=true}"
 : "${ROUTER_PORT:=8085}"
 

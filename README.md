@@ -15,6 +15,7 @@ You start the workflow with **one human-readable prompt** in TaskRouter chat. Ta
 ```
 Warp_AI_Agentic_Orchestrator/
 ├── docs/
+│   ├── instructions.md
 │   ├── CHANGELOG.md           # Auto-appended final summaries per build
 │   ├── build-summary.md       # Step-by-step log + final block results
 │   ├── router_log.jsonl       # Structured event log

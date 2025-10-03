@@ -58,5 +58,14 @@
       "headers": { },
       "start_on_launch": true
     }
+    "Context7": {
+      "command": "npx",
+      "args": [
+          "-y",
+          "@upstash/context7-mcp"
+      ],
+      "env": { },
+      "working_directory": "current_working_directory"
+    }
   }
 }

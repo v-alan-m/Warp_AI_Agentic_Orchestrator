@@ -19,7 +19,7 @@ New-Item -ItemType Directory -Force -Path $DocsDir | Out-Null
 }
 
 if (-not $env:ROUTER_LOG_DIR)         { $env:ROUTER_LOG_DIR = $DocsDir }
-if (-not $env:ROUTER_MAX_STEPS)       { $env:ROUTER_MAX_STEPS = "10" }
+if (-not $env:ROUTER_MAX_STEPS)       { $env:ROUTER_MAX_STEPS = "17" }
 if (-not $env:ROUTER_ENFORCE_RULE_ACK){ $env:ROUTER_ENFORCE_RULE_ACK = "true" }
 if (-not $env:ROUTER_PORT)            { $env:ROUTER_PORT = "8085" }
 
@@ -31,11 +31,6 @@ Write-Host "MAX_STEPS    : $($env:ROUTER_MAX_STEPS)"
 Write-Host "RULE_ACK     : $($env:ROUTER_ENFORCE_RULE_ACK)"
 Write-Host "ROUTER_PORT  : $($env:ROUTER_PORT)"
 Write-Host ""
-Write-Host "===== Placement Guidance ====="
-Write-Host "Agent Profiles (use POSIX path with /):`n  $ProjectDirPosix"
-Write-Host "MCP Servers (use Windows path with double backslashes \\):`n  $ProjectDirWinEsc"
-Write-Host "================================"
-Write-Host ""
 
 # Quick check uvicorn is present
 $uv = & python -c "import pkgutil; import sys; sys.exit(0 if pkgutil.find_loader('uvicorn') else 1)"; if ($LASTEXITCODE -ne 0) {
@@ -44,13 +39,29 @@ $uv = & python -c "import pkgutil; import sys; sys.exit(0 if pkgutil.find_loader
 }
 
 Write-Host "Starting Router MCP (attached)..."
-Write-Host "Tip: Open another terminal to tail logs:"
+Write-Host ""
+Write-Host "Tip:"
+Write-Host ""
+Write-Host "View the build summary live by opening a new terminal and pasting in:"
 Write-Host "  Get-Content -Path `"$($DocsDir)\build-summary.md`" -Wait"
+Write-Host ""
+Write-Host "View the router log live by opening a new terminal and pasting in:"
 Write-Host "  Get-Content -Path `"$($DocsDir)\router_log.jsonl`" -Wait"
+Write-Host ""
+Write-Host "===== Placement Guidance ====="
+Write-Host ""
+Write-Host "IMPORTANT: Copy and paste these directories into Warp's MCP configuration JSON and Agent profile pages respectively."
+Write-Host ""
+Write-Host "Agent Profiles (use POSIX path with /):`n  $ProjectDirPosix"
+Write-Host ""
+Write-Host "MCP Servers (use Windows path with double backslashes \\):`n  $ProjectDirWinEsc"
+Write-Host ""
+Write-Host "=========Running server========="
+Write-Host ""
+Write-Host "Starting router_mcp server (router_mcp.py):"
 Write-Host ""
 
 # Run in the foreground (visible). Stop with Ctrl+C or closing the window.
 python -m uvicorn router_mcp:APP --host 127.0.0.1 --port $env:ROUTER_PORT --log-level info --no-use-colors
 
 # Press Ctrl+C in that terminal to kill/stop the script.
-

@@ -1,38 +1,41 @@
-# gui_manager.py
-# Local GUI to add MCP servers, draft/AI-generate Rules (with titled policy line),
-# add new agent Profiles, and patch router_mcp.py (SUB_AGENTS + RULE_TITLES).
-# - Adds a "Copy JSON" button for MCP Servers block.
-# - Rule generation now begins with: "<TitleName> — <PolicyName>"
-#   where <PolicyName> reflects the role (e.g., "UXResearcher — Research Artifacts Policy").
-# - Sections included (plain text, no Markdown): Role, Scope, Strict Prohibitions, Allowed Tools,
-#   Method & Equity, Design & Security, Quality, Accessibility (WCAG AA), Spec Alignment,
-#   Safety, Guidelines, Output, Success Criteria, Deliverables.
+# mcp_gui_manager.py
+# Local GUI to add MCP servers, AI-generate Rules (no local fallback),
+# add new agent Profiles (with live YAML view), and patch router_mcp.py
+# with live views of SUB_AGENTS and RULE_TITLES.
+#
+# Changes vs previous:
+# 1) Removed local rule fallback — requires OpenAI API (gpt-5-chat-latest).
+# 2) Loads prior rules from ./warp_config/warp_rules/*.md
+#    and displays "Context: N rules" beside the AI button.
+# 3) UI split: Top = MCP servers, Bottom = Agent Name → Add Profile (YAML live) →
+#    Create/Refine Rule → Patch Router (SUB_AGENTS + RULE_TITLES live).
+# 4) Shows current warp-agent-config.yaml in a textbox (auto-refresh after save).
+# 5) Shows current SUB_AGENTS and RULE_TITLES in separate textboxes
+#    (auto-refresh after patch).
 #
 # Run:
-#   pip install flask pyyaml openai
-#   (optional) export OPENAI_API_KEY=sk-...
-#   python gui_manager.py
+#   pip install flask pyyaml openai python-dotenv
+#   export OPENAI_API_KEY=sk-...
+#   python mcp_gui_manager.py
 #
 # UI: http://127.0.0.1:5057
 
 from __future__ import annotations
-
-import json
-import os
-import re
-import shutil
-import time
-from dotenv import load_dotenv
+import os, re, json, time, shutil, glob, difflib
 from dataclasses import dataclass
 from typing import Any, Dict, Tuple, Optional
 
 import yaml
 from flask import Flask, request, render_template_string, jsonify
 
-# Loads variables from .env into os.environ
-load_dotenv()
+try:
+    from dotenv import load_dotenv
 
-# Optional OpenAI
+    load_dotenv()
+except Exception:
+    pass
+
+# OpenAI (required for rule generation)
 try:
     from openai import OpenAI
 except Exception:
@@ -45,6 +48,7 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 MCP_JSON_PATH = os.path.join(ROOT, "warp_config", "warp-mcp-config.yaml")
 AGENTS_YAML_PATH = os.path.join(ROOT, "warp_config", "warp-agent-config.yaml")
 ROUTER_PY_PATH = os.path.join(ROOT, "router_mcp.py")
+RULES_DIR = os.path.join(ROOT, "warp_config", "warp_rules")
 
 
 # ---------------------------
@@ -105,6 +109,29 @@ def to_title(name: str) -> str:
 
 
 # ---------------------------
+# Load prior rules (context)
+# ---------------------------
+
+def load_rule_corpus() -> Tuple[int, str]:
+    """
+    Returns (count, combined_text) of prior rules from RULES_DIR.
+    """
+    if not os.path.isdir(RULES_DIR):
+        return 0, ""
+    paths = sorted(glob.glob(os.path.join(RULES_DIR, "*.md")))
+    blocks = []
+    for p in paths:
+        try:
+            txt = read_text(p).strip()
+            if txt:
+                blocks.append(f"# FILE: {os.path.basename(p)}\n{txt}")
+        except Exception:
+            continue
+    combined = "\n\n\n".join(blocks)
+    return len(blocks), combined
+
+
+# ---------------------------
 # Agent profile scaffolding
 # ---------------------------
 
@@ -152,6 +179,17 @@ class RouterPatchPreview:
     before_after: Optional[str]
 
 
+def _extract_block(src: str, varname: str) -> Optional[str]:
+    m = re.search(rf"({varname}\s*=\s*\{{[^}}]*\}})", src, re.DOTALL)
+    return m.group(1) if m else None
+
+
+def extract_subagents_and_ruletitles(src: str) -> Tuple[str, str]:
+    sub = _extract_block(src, "SUB_AGENTS") or "SUB_AGENTS = {\n}\n"
+    rtl = _extract_block(src, "RULE_TITLES") or "RULE_TITLES = {\n}\n"
+    return sub, rtl
+
+
 def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> RouterPatchPreview:
     sub_agents_pat = r"(SUB_AGENTS\s*=\s*\{[^}]*\})"
     rule_titles_pat = r"(RULE_TITLES\s*=\s*\{[^}]*\})"
@@ -177,20 +215,15 @@ def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> Rout
             rule_new = new_block
     before_after = None
     if updated_src != router_src:
-        before_after = diff_preview(router_src, updated_src)
+        diff = difflib.unified_diff(
+            router_src.splitlines(True),
+            updated_src.splitlines(True),
+            fromfile="router_mcp.py (old)",
+            tofile="router_mcp.py (new)",
+            n=4
+        )
+        before_after = "".join(diff)
     return RouterPatchPreview(found_sub, found_rule, sub_new, rule_new, before_after)
-
-
-def diff_preview(old: str, new: str, ctx: int = 4) -> str:
-    import difflib
-    diff = difflib.unified_diff(
-        old.splitlines(True),
-        new.splitlines(True),
-        fromfile="router_mcp.py (old)",
-        tofile="router_mcp.py (new)",
-        n=ctx
-    )
-    return "".join(diff)
 
 
 def apply_patch_again(src: str, agent_title: str, rule_title: str) -> str:
@@ -219,7 +252,7 @@ def apply_patch_again(src: str, agent_title: str, rule_title: str) -> str:
 def policy_name_for_title(title_name: str) -> str:
     t = title_name.lower()
     if "ux" in t or "research" in t: return "Research Artifacts Policy"
-    if "design" in t or "ui" in t and "front" not in t: return "Design Artifacts Policy"
+    if "design" in t or ("ui" in t and "front" not in t): return "Design Artifacts Policy"
     if "front" in t: return "UI Policy"
     if "back" in t or "api" in t or "service" in t: return "API & Services Policy"
     if "file" in t: return "File Ops Policy"
@@ -232,7 +265,7 @@ def policy_name_for_title(title_name: str) -> str:
 
 
 # ---------------------------
-# Rule generation
+# Rule generation (AI only)
 # ---------------------------
 
 SECTIONS_ORDER = [
@@ -252,107 +285,60 @@ SECTIONS_ORDER = [
     "Deliverables",
 ]
 
-LOCAL_RULE_BODY = """Role:
-- State this agent’s mission in one sentence.
 
-Scope:
-- Enumerate activities this agent is responsible for.
-
-Strict Prohibitions:
-- Call out activities the agent must NOT perform.
-
-Allowed Tools:
-- List MCP servers/tools this agent may call and for what.
-
-Method & Equity:
-- Note inclusive research/practices and representative sampling where relevant.
-
-Design & Security:
-- Call out secure defaults, privacy hygiene, and design/system constraints.
-
-Quality:
-- Define “good” (readability, maintainability, testability, etc.).
-
-Accessibility (WCAG AA):
-- Landmarks, keyboard nav, color contrast, aria-labels/roles, error states, focus order.
-
-Spec Alignment:
-- Follow `/project/docs/site-spec.md` when present (anchors, back-links, nav consistency).
-
-Safety:
-- Avoid destructive operations; least privilege; explain risky actions before proceeding.
-
-Guidelines:
-- Any coding/style/UX standards specific to your team.
-
-Output:
-- Where to write artifacts in /project, filename conventions, and what to return.
-
-Success Criteria:
-- What constitutes “done” for this agent’s tasks.
-
-Deliverables:
-- Concrete files/changes this agent will produce.
-"""
-
-
-def ai_generate_rule(title_name: str, user_notes: str) -> str:
+def ai_generate_rule(title_name: str, user_notes: str, prior_rules_text: str) -> str:
     """
     Returns a plain-text rule starting with:
       "<TitleName> — <PolicyName>"
     followed by ordered sections in SECTIONS_ORDER.
-    Uses OpenAI if available; otherwise falls back to a local scaffold.
+    Requires OpenAI + OPENAI_API_KEY; no local fallback.
     """
+    if OpenAI is None or not os.environ.get("OPENAI_API_KEY"):
+        raise RuntimeError("OPENAI_API_KEY missing or OpenAI SDK not available")
+
     policy_name = policy_name_for_title(title_name)
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    # Attempt AI refinement
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if api_key and OpenAI is not None:
-        try:
-            client = OpenAI(api_key=api_key)
-            sys_msg = (
-                    "You draft operational rules for Warp agent profiles. "
-                    "Output plain text (no Markdown). Start with a single title line: "
-                    f"\"{title_name} — {policy_name}\" then include the following sections in EXACT order, "
-                    "each as a header line followed by succinct bullet points: "
-                    + ", ".join(SECTIONS_ORDER) + ". "
-                                                  "Keep it concise, actionable, and aligned with least-privilege and safety."
-            )
-            user_msg = (
-                f"Agent name: {title_name}\n"
-                f"Policy title: {title_name} — {policy_name}\n"
-                f"Context/notes:\n{user_notes}\n\n"
-                "Include these specifics where relevant:\n"
-                "- Accessibility (WCAG AA) requirements\n"
-                "- Spec Alignment to `/project/docs/site-spec.md` (anchors, back-links, nav consistency)\n"
-                "- What tools (MCP servers) are allowed and when\n"
-                "- Clear success criteria and deliverables\n"
-            )
-            resp = client.chat.completions.create(
-                model="gpt-5-chat-latest",
-                messages=[
-                    {"role": "system", "content": sys_msg},
-                    {"role": "user", "content": user_msg}
-                ],
-                temperature=0.3,
-            )
-            text = resp.choices[0].message.content.strip()
-            # Ensure first line has the expected titled policy; if not, prefix it
-            first = text.splitlines()[0].strip() if text else ""
-            titled = f"{title_name} — {policy_name}"
-            if not first or titled.lower() not in first.lower():
-                text = titled + "\n\n" + text
-            return text
-        except Exception:
-            pass  # fall through to local scaffold
+    sys_msg = (
+            "You draft operational rules for Warp agent profiles. "
+            "Output plain text (no Markdown). Start with a single title line: "
+            f"\"{title_name} — {policy_name}\" then include the following sections in EXACT order, "
+            "each as a header line followed by succinct bullet points: "
+            + ", ".join(SECTIONS_ORDER) + ". "
+                                          "Keep it concise, actionable, least-privilege, and safe."
+    )
 
-    # Local scaffold
+    user_msg = (
+        f"Agent name: {title_name}\n"
+        f"Policy title: {title_name} — {policy_name}\n"
+        f"User notes:\n{user_notes}\n\n"
+        "Prior Rules Context (verbatim):\n"
+        f"{prior_rules_text}\n"
+        "Include these specifics where relevant:\n"
+        "- Accessibility (WCAG AA) requirements\n"
+        "- Spec Alignment to `/project/docs/site-spec.md` (anchors, back-links, nav consistency)\n"
+        "- What tools (MCP servers) are allowed and when\n"
+        "- Clear success criteria and deliverables\n"
+    )
+
+    resp = client.chat.completions.create(
+        model="gpt-5-chat-latest",
+        messages=[{"role": "system", "content": sys_msg},
+                  {"role": "user", "content": user_msg}],
+        temperature=0.3,
+    )
+    text = resp.choices[0].message.content.strip()
     titled = f"{title_name} — {policy_name}"
-    return f"{titled}\n\n{LOCAL_RULE_BODY}"
+    if not text.splitlines():
+        raise RuntimeError("Model returned empty text")
+    first = text.splitlines()[0].strip()
+    if titled.lower() not in first.lower():
+        text = titled + "\n\n" + text
+    return text
 
 
 # ---------------------------
-# HTML (with Copy button for MCP JSON)
+# HTML
 # ---------------------------
 
 HTML = r"""
@@ -364,18 +350,19 @@ HTML = r"""
   <style>
     body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 24px; color: #111; }
     h1 { margin-bottom: 8px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     textarea, input[type=text] { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, monospace; }
     textarea { min-height: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
     input[type=text] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
-    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; background: #fafafa; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; background: #fafafa; margin-bottom: 16px; }
     .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; cursor: pointer; }
     .btn.secondary { background: white; color: #111; }
     .ok { color: #058; }
     .err { color: #b00; white-space: pre-wrap; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, monospace; white-space: pre; background: #fff; border: 1px solid #ddd; padding: 8px; border-radius: 8px; }
     .small { font-size: 12px; color: #555; }
-    .grid2 { display: grid; grid-template-columns: 220px 1fr auto; gap: 8px; align-items: center; }
+    .grid2 { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   </style>
   <script>
     function copyById(id) {
@@ -405,29 +392,40 @@ HTML = r"""
             'agent-name: ' + d.kebab + '   |   Title: ' + d.title;
         });
     }
+    async function refreshRulesCount() {
+      const r = await fetch('/rules_count');
+      const j = await r.json();
+      document.getElementById('rules_loaded').textContent = '(Context: ' + j.count + ' rules)';
+    }
     async function genRule() {
       const name = document.getElementById('agent_name').value;
       const notes = document.getElementById('rule_notes').value;
       const btn = document.getElementById('btn_gen');
+      const out = document.getElementById('rule_result');
       btn.disabled = true; btn.textContent = 'Generating...';
+      out.textContent = '';
       const r = await fetch('/ai_rule', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ name, notes })
       });
       const j = await r.json();
       btn.disabled = false; btn.textContent = 'AI: Generate/Refine Rule';
-      document.getElementById('rule_text').value = j.text || '';
+      if (j.ok) {
+        document.getElementById('rule_text').value = j.text || '';
+      } else {
+        out.className = 'err small';
+        out.textContent = j.msg || 'Error';
+      }
     }
     async function saveMcp() {
-      const name = document.getElementById('agent_name').value;
       const jsonText = document.getElementById('mcp_json').value;
       const r = await fetch('/save_mcp', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name, mcp_json: jsonText })
+        body: JSON.stringify({ mcp_json: jsonText })
       });
       const j = await r.json();
       const out = document.getElementById('mcp_result');
-      out.className = j.ok ? 'ok' : 'err';
+      out.className = j.ok ? 'ok small' : 'err small';
       out.textContent = j.msg;
     }
     async function addProfile() {
@@ -437,10 +435,16 @@ HTML = r"""
         body: JSON.stringify({ name })
       });
       const j = await r.json();
-      document.getElementById('profile_preview').textContent = j.preview || '';
       const out = document.getElementById('profile_result');
-      out.className = j.ok ? 'ok' : 'err';
+      document.getElementById('profile_preview').textContent = j.preview || '';
+      out.className = j.ok ? 'ok small' : 'err small';
       out.textContent = j.msg || '';
+      refreshAgentYaml();
+    }
+    async function refreshAgentYaml() {
+      const r = await fetch('/get_agent_yaml');
+      const j = await r.json();
+      document.getElementById('agent_yaml_text').value = j.text || '';
     }
     async function patchRouter() {
       const name = document.getElementById('agent_name').value;
@@ -450,17 +454,43 @@ HTML = r"""
         body: JSON.stringify({ name, rule })
       });
       const j = await r.json();
-      document.getElementById('router_diff').textContent = j.diff || '';
       const out = document.getElementById('router_result');
-      out.className = j.ok ? 'ok' : 'err';
+      out.className = j.ok ? 'ok small' : 'err small';
       out.textContent = j.msg || '';
+      refreshRouterBlocks();
     }
+    async function refreshRouterBlocks() {
+      const r = await fetch('/get_router_blocks');
+      const j = await r.json();
+      document.getElementById('sub_agents_box').value = j.sub_agents || '';
+      document.getElementById('rule_titles_box').value = j.rule_titles || '';
+    }
+    window.addEventListener('DOMContentLoaded', ()=>{
+      refreshRulesCount();
+      refreshAgentYaml();
+      refreshRouterBlocks();
+    });
   </script>
 </head>
 <body>
   <h1>Warp Orchestrator — GUI</h1>
   <p class="small">Root: {{root}}</p>
 
+  <!-- TOP: MCP servers -->
+  <div class="card">
+    <h3>1) Add MCP Server JSON</h3>
+    <div class="grid2">
+      <span class="small">Paste JSON below</span>
+      <span></span>
+      <button id="mcp_json_copy_btn" class="btn secondary" onclick="copyById('mcp_json')">Copy</button>
+    </div>
+    <textarea id="mcp_json" oninput="validateJSON()" placeholder='{"file-mcp": { "type":"stdio", "command":"node", "args":["..."] }}'></textarea>
+    <p id="json_err" class="small">Paste JSON to validate…</p>
+    <button class="btn" onclick="saveMcp()">Save MCP → warp-mcp-config.yaml</button>
+    <p id="mcp_result" class="small"></p>
+  </div>
+
+  <!-- BOTTOM: Agent + Profile + Rule + Router -->
   <div class="card">
     <div class="grid2">
       <label>Agent Name (e.g., FileCreator)</label>
@@ -469,46 +499,45 @@ HTML = r"""
     </div>
   </div>
 
-  <div class="row" style="margin-top:16px;">
+  <div class="row2">
     <div class="card">
-      <h3>1) Add MCP Server JSON</h3>
-      <div class="grid2">
-        <span class="small">Paste JSON below</span>
-        <span></span>
-        <button id="mcp_json_copy_btn" class="btn secondary" onclick="copyById('mcp_json')">Copy</button>
-      </div>
-      <textarea id="mcp_json" oninput="validateJSON()" placeholder='{"file-mcp": { "type":"stdio", "command":"node", "args":["..."] }}'></textarea>
-      <p id="json_err" class="small">Paste JSON to validate…</p>
-      <button class="btn" onclick="saveMcp()">Save MCP → warp-mcp-config.yaml</button>
-      <p id="mcp_result" class="small"></p>
-    </div>
-
-    <div class="card">
-      <h3>2) Create/Refine Rule (plain text; starts with “Title — Policy”)</h3>
-      <textarea id="rule_notes" placeholder="Optional: describe capabilities, guardrails, deliverables…"></textarea>
-      <button id="btn_gen" class="btn secondary" onclick="genRule()" style="margin: 20px 0 10px 0;">AI: Generate/Refine Rule</button>
-      <textarea id="rule_text" placeholder="Final rule text (plain, no markdown). Paste to Warp → Rules."></textarea>
-      <p class="small">The first line will be like: <code>UXResearcher — Research Artifacts Policy</code></p>
-    </div>
-  </div>
-
-  <div class="row" style="margin-top:16px;">
-    <div class="card">
-      <h3>3) Add Agent Profile → warp-agent-config.yaml</h3>
+      <h3>2) Add Agent Profile → warp-agent-config.yaml</h3>
       <button class="btn" onclick="addProfile()">Add Profile (Preview + Save)</button>
-      <pre id="profile_preview" class="mono" style="min-height:160px;"></pre>
+      <pre id="profile_preview" class="mono" style="min-height:120px;"></pre>
       <p id="profile_result" class="small"></p>
+      <h4 class="small">Current warp-agent-config.yaml</h4>
+      <textarea id="agent_yaml_text" readonly></textarea>
     </div>
 
     <div class="card">
-      <h3>4) Patch router_mcp.py (SUB_AGENTS + RULE_TITLES)</h3>
-      <button class="btn" onclick="patchRouter()">Patch Router (Preview + Save)</button>
-      <pre id="router_diff" class="mono" style="min-height:160px;"></pre>
-      <p id="router_result" class="small"></p>
+      <h3>3) Create/Refine Rule (plain text; starts with “Title — Policy”)
+        <span id="rules_loaded" class="small" style="margin-left:8px;"></span>
+      </h3>
+      <textarea id="rule_notes" placeholder="Optional: describe capabilities, guardrails, deliverables…"></textarea>
+      <button id="btn_gen" class="btn secondary" onclick="genRule()" style="margin: 0px 0 20px 0;">AI: Generate/Refine Rule</button>
+      <p id="rule_result" class="small"></p>
+      <textarea id="rule_text" placeholder="Final rule text (plain, no markdown). Paste to Warp → Rules."></textarea>
+      <p class="small">First line example: <code>UXResearcher — Research Artifacts Policy</code></p>
     </div>
   </div>
 
-  <p class="small">Backups are created as <code>.bak.YYYYMMDD-HHMMSS</code> next to each file before writing.</p>
+  <div class="card">
+    <h3>4) Patch router_mcp.py (live blocks)</h3>
+    <button class="btn" onclick="patchRouter()">Patch Router (Preview + Save)</button>
+    <p id="router_result" class="small"></p>
+    <div class="grid3">
+      <div>
+        <h4 class="small">SUB_AGENTS (live)</h4>
+        <textarea id="sub_agents_box" readonly></textarea>
+      </div>
+      <div>
+        <h4 class="small">RULE_TITLES (live)</h4>
+        <textarea id="rule_titles_box" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <p class="small">Backups saved as <code>.bak.YYYYMMDD-HHMMSS</code> before writes.</p>
 </body>
 </html>
 """
@@ -529,20 +558,48 @@ def api_to_kebab():
     return jsonify({"kebab": to_kebab(name), "title": to_title(name)})
 
 
+@APP.get("/rules_count")
+def api_rules_count():
+    cnt, _ = load_rule_corpus()
+    return jsonify({"count": cnt})
+
+
+@APP.get("/get_agent_yaml")
+def api_get_agent_yaml():
+    try:
+        text = read_text(AGENTS_YAML_PATH) if os.path.exists(AGENTS_YAML_PATH) else ""
+    except Exception as e:
+        text = f"# Error reading {AGENTS_YAML_PATH}: {e}"
+    return jsonify({"text": text})
+
+
+@APP.get("/get_router_blocks")
+def api_get_router_blocks():
+    try:
+        src = read_text(ROUTER_PY_PATH) if os.path.exists(ROUTER_PY_PATH) else ""
+        sub, rtl = extract_subagents_and_ruletitles(src) if src else ("", "")
+    except Exception as e:
+        sub, rtl = (f"# Error: {e}", "")
+    return jsonify({"sub_agents": sub, "rule_titles": rtl})
+
+
 @APP.post("/ai_rule")
 def api_ai_rule():
     data = request.get_json(force=True)
     title = to_title(data.get("name", "NewAgent"))
     notes = data.get("notes", "").strip()
-    text = ai_generate_rule(title, notes)
-    return jsonify({"text": text})
+    cnt, corpus = load_rule_corpus()
+    try:
+        text = ai_generate_rule(title, notes, corpus)
+        return jsonify({"ok": True, "text": text, "context_rules": cnt})
+    except Exception as e:
+        return jsonify({"ok": False, "msg": str(e), "context_rules": cnt}), 400
 
 
 @APP.post("/save_mcp")
 def api_save_mcp():
     data = request.get_json(force=True)
     text = data.get("mcp_json", "")
-    # validate JSON
     try:
         mcp_obj = json.loads(text)
         if not isinstance(mcp_obj, dict):
@@ -586,36 +643,40 @@ def api_patch_router():
     data = request.get_json(force=True)
     title = to_title(data.get("name", "NewAgent"))
     rule_text = (data.get("rule") or "").strip()
-    # Determine rule title for RULE_TITLES: prefer first line of provided rule; else synthesize
-    first_line = rule_text.splitlines()[0].strip() if rule_text else ""
-    if "—" in first_line and first_line.lower().startswith(title.lower()):
-        rule_title = first_line
-    else:
-        rule_title = f"{title} — {policy_name_for_title(title)}"
+    # Prefer first line of rule if it starts with "<Title> — …"
+    first = rule_text.splitlines()[0].strip() if rule_text else ""
+    rule_title = first if ("—" in first and first.lower().startswith(
+        title.lower())) else f"{title} — {policy_name_for_title(title)}"
     try:
         src = read_text(ROUTER_PY_PATH)
         preview = patch_router_mcp(src, title, rule_title)
         if not (preview.found_sub_agents and preview.found_rule_titles):
             return jsonify({
-                               "ok": False, "diff": preview.before_after or "",
-                               "msg": "Could not find SUB_AGENTS and/or RULE_TITLES blocks in router_mcp.py"
-                           }), 400
+                "ok": False, "msg": "Could not find SUB_AGENTS and/or RULE_TITLES in router_mcp.py",
+                "diff": preview.before_after or ""
+            }), 400
         if preview.before_after:
             patched = apply_patch_again(src, title, rule_title)
             write_text_atomic(ROUTER_PY_PATH, patched)
+            # Return updated blocks for live view
+            sub, rtl = extract_subagents_and_ruletitles(patched)
             return jsonify({
-                               "ok": True, "diff": preview.before_after,
-                               "msg": f"router_mcp.py patched (SUB_AGENTS + RULE_TITLES) → {ROUTER_PY_PATH}"
-                           })
+                "ok": True,
+                "msg": f"router_mcp.py patched (SUB_AGENTS + RULE_TITLES) → {ROUTER_PY_PATH}",
+                "diff": preview.before_after, "sub_agents": sub, "rule_titles": rtl
+            })
         else:
-            return jsonify({"ok": True, "diff": "", "msg": "No changes needed; entries already present."})
+            # Still return current blocks
+            sub, rtl = extract_subagents_and_ruletitles(src)
+            return jsonify({
+                "ok": True, "msg": "No changes needed; entries already present.", "diff": "",
+                "sub_agents": sub, "rule_titles": rtl
+            })
     except Exception as e:
-        return jsonify({"ok": False, "diff": "", "msg": f"Error: {e}"}), 500
+        return jsonify({"ok": False, "msg": f"Error: {e}", "diff": ""}), 500
 
 
 if __name__ == "__main__":
-    import uvicorn
-
     port = int(os.environ.get("MCP_MANAGER_GUI_PORT"))
     APP.run(host="127.0.0.1", port=port, debug=True, use_reloader=True)
 

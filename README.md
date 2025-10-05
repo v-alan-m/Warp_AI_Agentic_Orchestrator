@@ -124,7 +124,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
   - `UXResearcher — Research Artifacts Policy`
   - `SprintPrioritizer — Planning Policy`
   - `RapidPrototyper — Prototype Policy`
-- Paste the text from `warp_config/prompts/*.md` for each role.
+- Paste the text from `warp_config/warp_rules/*.md` for each role.
 
 **Good to know:**  
 `router_mcp.py` auto-injects the correct Rule each step and requires the agent to acknowledge with:
@@ -227,11 +227,11 @@ DONE
 - **Warp UI**  
   - *MCP Servers*: paste the **one-shot JSON** from `warp_config/warp-mcp-config.yaml`  
   - *Profiles*: mirror from `warp_config/warp-agent-config.yaml` (names, model, permissions, allowed servers)  
-  - *Rules*: paste from `warp_config/prompts/*.md` (one Rule per profile)
+  - *Rules*: paste from `warp_config/warp_rules/*.md` (one Rule per profile)
 - **Repo**  
   - `warp_config/warp-mcp-config.yaml` — the JSON you pasted into Warp (kept here for team reference)  
   - `warp_config/warp-agent-config.yaml` — authoritative profile spec (names, perms, allowed servers)  
-  - `warp_config/prompts/*.md` — Rule texts (role “system prompts”)  
+  - `warp_config/warp_rules/*.md` — Rule texts (role “system prompts”)  
   - `router_mcp.py` — orchestrator with auto-loop + logs  
   - `docs/*` — logs + spec  
   - `project/src/*` — generated code

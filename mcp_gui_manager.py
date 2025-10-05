@@ -3,22 +3,19 @@
 # add new agent Profiles (with live YAML view), and patch router_mcp.py
 # with live views of SUB_AGENTS and RULE_TITLES.
 #
-# Changes vs previous:
-# 1) Removed local rule fallback — requires OpenAI API (gpt-5-chat-latest).
-# 2) Loads prior rules from ./warp_config/warp_rules/*.md
-#    and displays "Context: N rules" beside the AI button.
-# 3) UI split: Top = MCP servers, Bottom = Agent Name → Add Profile (YAML live) →
-#    Create/Refine Rule → Patch Router (SUB_AGENTS + RULE_TITLES live).
-# 4) Shows current warp-agent-config.yaml in a textbox (auto-refresh after save).
-# 5) Shows current SUB_AGENTS and RULE_TITLES in separate textboxes
-#    (auto-refresh after patch).
+# This version:
+# - Uses fixed RULES_DIR = ./warp_config/warp_rules
+# - Header shows the active rules directory path
+# - "(Context: N rules)" now includes a dropdown of rule files + preview textarea
+# - Keeps AI-only rule creation (requires OPENAI_API_KEY; model gpt-5-chat-latest)
+# - Live view of warp-agent-config.yaml + live views of SUB_AGENTS and RULE_TITLES
 #
 # Run:
 #   pip install flask pyyaml openai python-dotenv
 #   export OPENAI_API_KEY=sk-...
 #   python mcp_gui_manager.py
 #
-# UI: http://127.0.0.1:5057
+# UI: http://127.0.0.1:5057  (override port with MCP_MANAGER_GUI_PORT)
 
 from __future__ import annotations
 import os, re, json, time, shutil, glob, difflib
@@ -48,6 +45,8 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 MCP_JSON_PATH = os.path.join(ROOT, "warp_config", "warp-mcp-config.yaml")
 AGENTS_YAML_PATH = os.path.join(ROOT, "warp_config", "warp-agent-config.yaml")
 ROUTER_PY_PATH = os.path.join(ROOT, "router_mcp.py")
+
+# Fixed rules directory (your canonical location)
 RULES_DIR = os.path.join(ROOT, "warp_config", "warp_rules")
 
 
@@ -129,6 +128,12 @@ def load_rule_corpus() -> Tuple[int, str]:
             continue
     combined = "\n\n\n".join(blocks)
     return len(blocks), combined
+
+
+def list_rule_files() -> list[str]:
+    if not os.path.isdir(RULES_DIR):
+        return []
+    return sorted(os.path.basename(p) for p in glob.glob(os.path.join(RULES_DIR, "*.md")))
 
 
 # ---------------------------
@@ -392,10 +397,29 @@ HTML = r"""
             'agent-name: ' + d.kebab + '   |   Title: ' + d.title;
         });
     }
-    async function refreshRulesCount() {
-      const r = await fetch('/rules_count');
+    async function refreshRulesMeta() {
+      const r = await fetch('/rules_meta');
       const j = await r.json();
       document.getElementById('rules_loaded').textContent = '(Context: ' + j.count + ' rules)';
+      document.getElementById('active_rules_dir').textContent = j.dir || '';
+      const sel = document.getElementById('rules_select');
+      sel.innerHTML = '';
+      (j.files || []).forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+      if ((j.files || []).length > 0) {
+        loadRuleText(sel.value);
+      } else {
+        document.getElementById('rules_view').value = '';
+      }
+    }
+    async function loadRuleText(name) {
+      if (!name) return;
+      const r = await fetch('/rule_text?name=' + encodeURIComponent(name));
+      const j = await r.json();
+      document.getElementById('rules_view').value = j.text || '';
     }
     async function genRule() {
       const name = document.getElementById('agent_name').value;
@@ -466,15 +490,20 @@ HTML = r"""
       document.getElementById('rule_titles_box').value = j.rule_titles || '';
     }
     window.addEventListener('DOMContentLoaded', ()=>{
-      refreshRulesCount();
+      refreshRulesMeta();
       refreshAgentYaml();
       refreshRouterBlocks();
+      const sel = document.getElementById('rules_select');
+      if (sel) sel.addEventListener('change', ()=>loadRuleText(sel.value));
     });
   </script>
 </head>
 <body>
   <h1>Warp Orchestrator — GUI</h1>
-  <p class="small">Root: {{root}}</p>
+  <p class="small">
+    Root: {{root}}<br/>
+    Rules dir: <span id="active_rules_dir">{{rules_dir}}</span>
+  </p>
 
   <!-- TOP: MCP servers -->
   <div class="card">
@@ -513,8 +542,14 @@ HTML = r"""
       <h3>3) Create/Refine Rule (plain text; starts with “Title — Policy”)
         <span id="rules_loaded" class="small" style="margin-left:8px;"></span>
       </h3>
+      <div class="grid2" style="margin-bottom:8px;">
+        <span class="small">Preview existing rule:</span>
+        <select id="rules_select"></select>
+        <span></span>
+      </div>
+      <textarea id="rules_view" readonly placeholder="Select a rule to preview its text…"></textarea>
       <textarea id="rule_notes" placeholder="Optional: describe capabilities, guardrails, deliverables…"></textarea>
-      <button id="btn_gen" class="btn secondary" onclick="genRule()" style="margin: 0px 0 20px 0;">AI: Generate/Refine Rule</button>
+      <button id="btn_gen" class="btn secondary" onclick="genRule()" style="margin: 12px 0 0px 0;">AI: Generate/Refine Rule</button>
       <p id="rule_result" class="small"></p>
       <textarea id="rule_text" placeholder="Final rule text (plain, no markdown). Paste to Warp → Rules."></textarea>
       <p class="small">First line example: <code>UXResearcher — Research Artifacts Policy</code></p>
@@ -549,7 +584,7 @@ HTML = r"""
 
 @APP.get("/")
 def home():
-    return render_template_string(HTML, root=ROOT)
+    return render_template_string(HTML, root=ROOT, rules_dir=RULES_DIR)
 
 
 @APP.get("/to_kebab")
@@ -558,6 +593,28 @@ def api_to_kebab():
     return jsonify({"kebab": to_kebab(name), "title": to_title(name)})
 
 
+@APP.get("/rules_meta")
+def api_rules_meta():
+    if not os.path.isdir(RULES_DIR):
+        return jsonify({"dir": RULES_DIR, "count": 0, "files": []})
+    files = list_rule_files()
+    return jsonify({"dir": RULES_DIR, "count": len(files), "files": files})
+
+
+@APP.get("/rule_text")
+def api_rule_text():
+    name = request.args.get("name", "").strip()
+    safe = re.match(r"^[\w\-. ]+\.md$", name or "")
+    path = os.path.join(RULES_DIR, name) if safe else None
+    if not (path and os.path.isfile(path)):
+        return jsonify({"text": ""})
+    try:
+        return jsonify({"text": read_text(path)})
+    except Exception as e:
+        return jsonify({"text": f"# Error reading rule: {e}"})
+
+
+# Back-compat: still provide simple count
 @APP.get("/rules_count")
 def api_rules_count():
     cnt, _ = load_rule_corpus()
@@ -679,4 +736,3 @@ def api_patch_router():
 if __name__ == "__main__":
     port = int(os.environ.get("MCP_MANAGER_GUI_PORT"))
     APP.run(host="127.0.0.1", port=port, debug=True, use_reloader=True)
-

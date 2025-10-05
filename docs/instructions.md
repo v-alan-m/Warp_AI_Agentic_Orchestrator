@@ -119,7 +119,7 @@ Open **Warp Drive → Rules** and create *one Rule per profile* with the titles:
 - `RapidPrototyper — Prototype Policy`
 
 Paste the content from:
-- `warp_config/prompts/*.md`  (each role → its Rule text)
+- `warp_config/warp_rules/*.md`  (each role → its Rule text)
 
 > You don’t need to mention Rules in chat — **router_mcp.py auto-injects** the correct Rule each step and **requires** the first line to acknowledge:
 >

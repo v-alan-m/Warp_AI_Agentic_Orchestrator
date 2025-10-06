@@ -6,9 +6,10 @@
 # This version:
 # - Uses fixed RULES_DIR = ./warp_config/warp_rules
 # - Header shows the active rules directory path
-# - "(Context: N rules)" now includes a dropdown of rule files + preview textarea
-# - Keeps AI-only rule creation (requires OPENAI_API_KEY; model gpt-5-chat-latest)
-# - Live view of warp-agent-config.yaml + live views of SUB_AGENTS and RULE_TITLES
+# - “(Context: N rules)” includes a dropdown of rule files  preview textarea
+# - AI-only rule creation (requires OPENAI_API_KEY; model gpt-5-chat-latest)
+# - Live view of warp-agent-config.yaml  live views of SUB_AGENTS and RULE_TITLES
+# - FIX: SUB_AGENTS patch now writes `"TitleName": "kebab-title"` (not just `"TitleName",`)
 #
 # Run:
 #   pip install flask pyyaml openai python-dotenv
@@ -94,16 +95,16 @@ def dump_yaml(data: Any) -> str:
 # ---------------------------
 
 def to_kebab(name: str) -> str:
-    s = re.sub(r"[\s_]+", "-", name.strip())
+    s = re.sub(r"[\s_]", "-", name.strip())
     s = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", s)
     s = s.lower()
-    s = re.sub(r"[^a-z0-9\-]+", "", s)
+    s = re.sub(r"[^a-z0-9\-]", "", s)
     s = re.sub(r"-{2,}", "-", s).strip("-")
     return s
 
 
 def to_title(name: str) -> str:
-    parts = re.split(r"[\s\-_]+", name.strip())
+    parts = re.split(r"[\s\-_]", name.strip())
     return "".join(p.capitalize() for p in parts if p)
 
 
@@ -196,6 +197,12 @@ def extract_subagents_and_ruletitles(src: str) -> Tuple[str, str]:
 
 
 def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> RouterPatchPreview:
+    """
+    Insert into:
+      SUB_AGENTS:   "Title": "kebab-title",
+      RULE_TITLES:  "Title": "Title — Policy",
+    only if missing.
+    """
     sub_agents_pat = r"(SUB_AGENTS\s*=\s*\{[^}]*\})"
     rule_titles_pat = r"(RULE_TITLES\s*=\s*\{[^}]*\})"
     sub_m = re.search(sub_agents_pat, router_src, re.DOTALL)
@@ -205,12 +212,18 @@ def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> Rout
     updated_src = router_src
     sub_new = None
     rule_new = None
+
+    kebab = to_kebab(agent_title)
+
     if found_sub:
         block = sub_m.group(1)
-        if re.search(rf'["\']{re.escape(agent_title)}["\']', block) is None:
-            new_block = re.sub(r"\}\s*$", f'    "{agent_title}",\n}}', block, flags=re.DOTALL)
+        # Check key presence like  "Title":
+        if re.search(rf'["\']{re.escape(agent_title)}["\']\s*:', block) is None:
+            insertion = f'    "{agent_title}": "{kebab}",\n'
+            new_block = re.sub(r"\}\s*$", insertion + "}", block, flags=re.DOTALL)
             updated_src = updated_src.replace(block, new_block)
             sub_new = new_block
+
     if found_rule:
         block = rule_m.group(1)
         if re.search(rf'["\']{re.escape(agent_title)}["\']\s*:', block) is None:
@@ -218,6 +231,7 @@ def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> Rout
             new_block = re.sub(r"\}\s*$", insertion + "}", block, flags=re.DOTALL)
             updated_src = updated_src.replace(block, new_block)
             rule_new = new_block
+
     before_after = None
     if updated_src != router_src:
         diff = difflib.unified_diff(
@@ -232,21 +246,28 @@ def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> Rout
 
 
 def apply_patch_again(src: str, agent_title: str, rule_title: str) -> str:
+    """
+    Apply the same logic directly (used after preview).
+    """
     sub_agents_pat = r"(SUB_AGENTS\s*=\s*\{[^}]*\})"
     rule_titles_pat = r"(RULE_TITLES\s*=\s*\{[^}]*\})"
     out = src
+    kebab = to_kebab(agent_title)
+
     sub_m = re.search(sub_agents_pat, out, re.DOTALL)
     if sub_m:
         block = sub_m.group(1)
-        if re.search(rf'["\']{re.escape(agent_title)}["\']', block) is None:
-            new_block = re.sub(r"\}\s*$", f'    "{agent_title}",\n}}', block, flags=re.DOTALL)
+        if re.search(rf'["\']{re.escape(agent_title)}["\']\s*:', block) is None:
+            new_block = re.sub(r"\}\s*$", f'    "{agent_title}": "{kebab}",\n}}', block, flags=re.DOTALL)
             out = out.replace(block, new_block)
+
     rule_m = re.search(rule_titles_pat, out, re.DOTALL)
     if rule_m:
         block = rule_m.group(1)
         if re.search(rf'["\']{re.escape(agent_title)}["\']\s*:', block) is None:
             new_block = re.sub(r"\}\s*$", f'    "{agent_title}": "{rule_title}",\n}}', block, flags=re.DOTALL)
             out = out.replace(block, new_block)
+
     return out
 
 
@@ -441,6 +462,11 @@ HTML = r"""
         out.textContent = j.msg || 'Error';
       }
     }
+    async function refreshMcpPreview() {
+      const r = await fetch('/get_mcp');
+      const j = await r.json();
+      document.getElementById('mcp_preview').value = j.text || '';
+    }
     async function saveMcp() {
       const jsonText = document.getElementById('mcp_json').value;
       const r = await fetch('/save_mcp', {
@@ -463,6 +489,9 @@ HTML = r"""
       document.getElementById('profile_preview').textContent = j.preview || '';
       out.className = j.ok ? 'ok small' : 'err small';
       out.textContent = j.msg || '';
+      if (j.ok && j.text) {
+        document.getElementById('mcp_preview').value = j.text;
+      }
       refreshAgentYaml();
     }
     async function refreshAgentYaml() {
@@ -490,6 +519,7 @@ HTML = r"""
       document.getElementById('rule_titles_box').value = j.rule_titles || '';
     }
     window.addEventListener('DOMContentLoaded', ()=>{
+      refreshMcpPreview();
       refreshRulesMeta();
       refreshAgentYaml();
       refreshRouterBlocks();
@@ -517,6 +547,8 @@ HTML = r"""
     <p id="json_err" class="small">Paste JSON to validate…</p>
     <button class="btn" onclick="saveMcp()">Save MCP → warp-mcp-config.yaml</button>
     <p id="mcp_result" class="small"></p>
+    <h4 class="small">Current warp-mcp-config.yaml</h4>
+    <textarea id="mcp_preview" readonly></textarea>
   </div>
 
   <!-- BOTTOM: Agent + Profile + Rule + Router -->
@@ -653,28 +685,81 @@ def api_ai_rule():
         return jsonify({"ok": False, "msg": str(e), "context_rules": cnt}), 400
 
 
+def _normalize_mcp_payload(text: str) -> Dict[str, Any]:
+    """
+    Accept either:
+      A) {"MyServer": {...}, "OtherServer": {...}}
+      B) {"mcpServers": { "MyServer": {...} }}
+    Return always the *servers mapping* (not wrapped).
+    """
+    obj = json.loads(text)
+    if not isinstance(obj, dict):
+        raise ValueError("Top-level JSON must be an object.")
+
+    # Wrapped payload form
+    if "mcpServers" in obj:
+        servers = obj["mcpServers"]
+        if not isinstance(servers, dict):
+            raise ValueError('"mcpServers" must be an object mapping serverName → config')
+        return servers
+
+    # Bare payload form (preferred for GUI input)
+    # If user pasted a single bare config (has 'command'/'type'), guide them.
+    if ("command" in obj) or ("type" in obj):
+        raise ValueError(
+            'Provide a mapping like {"MyServer": { ...config... }} '
+            'or wrap as {"mcpServers": { "MyServer": { ... } }}'
+        )
+    return obj
+
+
+@APP.get("/get_mcp")
+def api_get_mcp():
+    try:
+        text = read_text(MCP_JSON_PATH) if os.path.exists(MCP_JSON_PATH) else "{}"
+    except Exception as e:
+        text = f'{{"#error": "{e}"}}'
+    return jsonify({"text": text})
+
+
 @APP.post("/save_mcp")
 def api_save_mcp():
     data = request.get_json(force=True)
-    text = data.get("mcp_json", "")
+    text = (data.get("mcp_json") or "").strip()
     try:
-        mcp_obj = json.loads(text)
-        if not isinstance(mcp_obj, dict):
-            raise ValueError("Root must be an object")
+        incoming = _normalize_mcp_payload(text)
     except Exception as e:
         return jsonify({"ok": False, "msg": f"JSON invalid: {e}"}), 400
+    # Load existing (supports YAML/JSON), ensure dict
     try:
         existing = load_yaml_or_json(MCP_JSON_PATH) or {}
         if not isinstance(existing, dict):
             existing = {}
     except Exception:
         existing = {}
-    merged = {**existing}
-    for k, v in mcp_obj.items():
-        merged[k] = v
+
+    # --- Merge respecting Warp schema ---
+    # If the file already uses the Warp schema { "mcpServers": { ... } },
+    # merge into that inner object. Otherwise, treat the root as the servers map.
+    result = None
+    if "mcpServers" in existing and isinstance(existing["mcpServers"], dict):
+        # Preserve any other top-level keys; only update mcpServers.
+        result = dict(existing)  # shallow copy
+        servers = dict(existing.get("mcpServers", {}))
+        servers.update(incoming)
+        result["mcpServers"] = servers
+    else:
+        # No warp schema present; keep flat mapping and merge at root.
+        result = dict(existing)
+        result.update(incoming)
+
+    # Pretty-print full file and validate round-trip JSON
+    pretty = dump_json_pretty(result)
+    json.loads(pretty)  # round-trip validation
     try:
-        write_text_atomic(MCP_JSON_PATH, dump_json_pretty(merged))
-        return jsonify({"ok": True, "msg": f"MCP servers updated → {MCP_JSON_PATH}"})
+        write_text_atomic(MCP_JSON_PATH, pretty)
+        count = len(result.get("mcpServers", result))  # number of servers merged
+        return jsonify({"ok": True, "msg": f"MCP servers updated → {MCP_JSON_PATH}", "text": pretty, "count": count})
     except Exception as e:
         return jsonify({"ok": False, "msg": f"Write failed: {e}"}), 500
 

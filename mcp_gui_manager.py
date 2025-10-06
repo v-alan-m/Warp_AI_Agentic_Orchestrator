@@ -12,6 +12,7 @@
 # - Live view of warp-agent-config.yaml (auto-polling)
 # - SUB_AGENTS patch writes `"TitleName": "kebab-title"`
 # - Save MCP honors Warp schema ({ "mcpServers": { ... } }) and pretty-prints the whole file
+# - NEW: Profile builder form (Title, Model dropdown, permissions checkboxes, allowed MCPs, auto notes)
 #
 # Run:
 #   pip install flask pyyaml openai python-dotenv
@@ -23,7 +24,7 @@
 from __future__ import annotations
 import os, re, json, time, shutil, glob, difflib
 from dataclasses import dataclass
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional, List
 
 import yaml
 from flask import Flask, request, render_template_string, jsonify
@@ -111,7 +112,7 @@ def to_title(name: str) -> str:
 
 
 # ---------------------------
-# Load prior rules (context)
+# Rules corpus
 # ---------------------------
 
 def load_rule_corpus() -> Tuple[int, str]:
@@ -133,45 +134,10 @@ def load_rule_corpus() -> Tuple[int, str]:
     return len(blocks), combined
 
 
-def list_rule_files() -> list[str]:
+def list_rule_files() -> List[str]:
     if not os.path.isdir(RULES_DIR):
         return []
     return sorted(os.path.basename(p) for p in glob.glob(os.path.join(RULES_DIR, "*.md")))
-
-
-# ---------------------------
-# Agent profile scaffolding
-# ---------------------------
-
-AGENT_TEMPLATE = lambda TitleName: {
-    "name": TitleName,
-    "description": f"A sub-agent named {TitleName}. Customize description.",
-    "system_prompt": f"""You are {TitleName}, a specialized sub-agent.
-- Scope: Describe what this agent does (and does NOT do).
-- Inputs: Clarify any required inputs.
-- Guardrails: State safety, least-privilege, and out-of-scope behaviors.
-- Tooling: If applicable, specify which MCP server(s) to call and when.
-""",
-    "permissions": {
-        "allow_file_write": False,
-        "allow_file_read": True,
-        "allow_command_execution": False,
-        "allowed_mcp_servers": []
-    }
-}
-
-
-def add_agent_profile(agent_config: Dict[str, Any], title_name: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    profiles = agent_config.get("profiles")
-    if profiles is None:
-        profiles = []
-        agent_config["profiles"] = profiles
-    for p in profiles:
-        if str(p.get("name", "")).strip().lower() == title_name.strip().lower():
-            return agent_config, p
-    block = AGENT_TEMPLATE(title_name)
-    profiles.append(block)
-    return agent_config, block
 
 
 # ---------------------------
@@ -369,9 +335,10 @@ HTML = r"""
     body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 24px; color: #111; }
     h1 { margin-bottom: 8px; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    textarea, input[type=text] { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, monospace; }
+    textarea, input[type=text], select { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, monospace; }
     textarea { min-height: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
-    input[type=text] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+    input[type=text], select { padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+    .checkrow { display:flex; gap:12px; align-items:center; }
     .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; background: #fafafa; margin-bottom: 16px; }
     .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; cursor: pointer; }
     .btn.secondary { background: white; color: #111; }
@@ -381,6 +348,7 @@ HTML = r"""
     .small { font-size: 12px; color: #555; }
     .grid2 { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid2b { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
   </style>
   <script>
     function copyById(id) {
@@ -408,6 +376,8 @@ HTML = r"""
         .then(r => r.json()).then(d => {
           document.getElementById('name_preview').textContent =
             'agent-name: ' + d.kebab + '   |   Title: ' + d.title;
+          // refresh derived notes
+          updateDerivedNotes();
         });
     }
 
@@ -449,7 +419,16 @@ HTML = r"""
         }
       } catch (e) {}
     }
-    // --- end live preview ---
+
+    // --- Derived "notes" content: Rule "<Title — Policy>" ---
+    function updateDerivedNotes() {
+      const name = document.getElementById('agent_name').value.trim() || "NewAgent";
+      fetch('/rule_title_for_name?name=' + encodeURIComponent(name))
+        .then(r => r.json()).then(j => {
+          const ruleTitle = j.rule_title || (name + " — Policy");
+          document.getElementById('notes').value = 'Rule "' + ruleTitle + '"';
+        });
+    }
 
     async function genRule() {
       const name = document.getElementById('agent_name').value;
@@ -471,6 +450,7 @@ HTML = r"""
         out.textContent = j.msg || 'Error';
       }
     }
+
     async function saveMcp() {
       const jsonText = document.getElementById('mcp_json').value;
       const r = await fetch('/save_mcp', {
@@ -487,10 +467,19 @@ HTML = r"""
       }
     }
     async function addProfile() {
-      const name = document.getElementById('agent_name').value;
+      const name  = document.getElementById('agent_name').value;
+      const model = document.getElementById('model_select').value;
+      const apply_code_files = document.getElementById('perm_apply_code_files').checked;
+      const read_files       = document.getElementById('perm_read_files').checked;
+      const mcps_raw         = document.getElementById('allowed_mcp').value;
+      const notes_text       = document.getElementById('notes').value;
+
       const r = await fetch('/add_profile', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name })
+        body: JSON.stringify({
+          name, model, apply_code_files, read_files,
+          allowed_mcp_servers: mcps_raw, notes: notes_text
+        })
       });
       const j = await r.json();
       const out = document.getElementById('profile_result');
@@ -500,6 +489,7 @@ HTML = r"""
       // still refresh immediately
       refreshAgentYaml();
     }
+
     async function patchRouter() {
       const name = document.getElementById('agent_name').value;
       const rule = document.getElementById('rule_text').value;
@@ -513,6 +503,7 @@ HTML = r"""
       out.textContent = j.msg || '';
       refreshRouterBlocks();
     }
+
     async function refreshRouterBlocks() {
       const r = await fetch('/get_router_blocks');
       const j = await r.json();
@@ -552,17 +543,13 @@ HTML = r"""
       refreshAgentYaml();
       refreshRouterBlocks();
       // polling loops (1.5s)
-      try {
-        pollMcpPreview();
-        setInterval(pollMcpPreview, 1500);
-      } catch (e) {}
-      try {
-        pollAgentYaml();
-        setInterval(pollAgentYaml, 1500);
-      } catch (e) {}
+      try { pollMcpPreview(); setInterval(pollMcpPreview, 1500); } catch (e) {}
+      try { pollAgentYaml(); setInterval(pollAgentYaml, 1500); } catch (e) {}
       // rules select change
       const sel = document.getElementById('rules_select');
       if (sel) sel.addEventListener('change', ()=>loadRuleText(sel.value));
+      // seed derived notes
+      updateDerivedNotes();
     });
   </script>
 </head>
@@ -592,7 +579,7 @@ HTML = r"""
   <!-- BOTTOM: Agent + Profile + Rule + Router -->
   <div class="card">
     <div class="grid2">
-      <label>Agent Name (e.g., FileCreator)</label>
+      <label>Title (Agent Name, e.g., FileCreator)</label>
       <input type="text" id="agent_name" oninput="toKebab()" placeholder="FileCreator"/>
       <span id="name_preview" class="mono small">agent-name: —</span>
     </div>
@@ -601,7 +588,31 @@ HTML = r"""
   <div class="row2">
     <div class="card">
       <h3>2) Add Agent Profile → warp-agent-config.yaml</h3>
-      <button class="btn" onclick="addProfile()">Add Profile (Preview + Save)</button>
+
+      <div class="grid2b">
+        <div>
+          <label>Model</label>
+          <select id="model_select">
+            <option value="claude-sonnet-latest" selected>claude-sonnet-latest</option>
+          </select>
+        </div>
+        <div>
+          <label>Allowed MCP Servers (comma-separated)</label>
+          <input type="text" id="allowed_mcp" value="file-mcp"/>
+        </div>
+      </div>
+
+      <div class="checkrow" style="margin-top:8px;">
+        <label><input type="checkbox" id="perm_apply_code_files" checked/> Apply Code Diffs</label>
+        <label><input type="checkbox" id="perm_read_files" checked/> Read Files</label>
+      </div>
+
+      <div style="margin-top:8px;">
+        <label>notes (auto)</label>
+        <input type="text" id="notes" readonly value='Rule "NewAgent — Policy"'/>
+      </div>
+
+      <button class="btn" style="margin-top:12px;" onclick="addProfile()">Add Profile (Preview + Save)</button>
       <pre id="profile_preview" class="mono" style="min-height:120px;"></pre>
       <p id="profile_result" class="small"></p>
       <h4 class="small">Current warp-agent-config.yaml</h4>
@@ -661,6 +672,14 @@ def home():
 def api_to_kebab():
     name = request.args.get("name", "").strip() or "NewAgent"
     return jsonify({"kebab": to_kebab(name), "title": to_title(name)})
+
+
+@APP.get("/rule_title_for_name")
+def api_rule_title_for_name():
+    name = request.args.get("name", "").strip() or "NewAgent"
+    title = to_title(name)
+    rule_title = f"{title} — {policy_name_for_title(title)}"
+    return jsonify({"rule_title": rule_title})
 
 
 # Rules meta + preview
@@ -804,19 +823,61 @@ def api_save_mcp():
         return jsonify({"ok": False, "msg": f"Write failed: {e}"}), 500
 
 
-# Add agent profile
+# Add agent profile (NEW schema for your request)
 @APP.post("/add_profile")
 def api_add_profile():
     data = request.get_json(force=True)
     title = to_title(data.get("name", "NewAgent"))
+    model = (data.get("model") or "claude-sonnet-latest").strip()
+    apply_code_files = bool(data.get("apply_code_files", True))
+    read_files = bool(data.get("read_files", True))
+    notes_in = (data.get("notes") or "").strip()
+    # Parse allowed MCPs (comma/space separated)
+    raw_mcps = (data.get("allowed_mcp_servers") or "").strip()
+    allowed_mcp_servers = [s.strip() for s in re.split(r"[,\s]+", raw_mcps) if s.strip()] or ["file-mcp"]
+
+    # Derive rule title used in notes if empty
+    profile_rule_title = f"{title} — {policy_name_for_title(title)}"
+    notes = notes_in if notes_in else f'Rule "{profile_rule_title}"'
+
+    # Load existing YAML (list under 'profiles')
     try:
         agent_cfg = yaml.safe_load(read_text(AGENTS_YAML_PATH)) if os.path.exists(AGENTS_YAML_PATH) else {}
         agent_cfg = agent_cfg or {}
-        new_cfg, block = add_agent_profile(agent_cfg, title)
-        preview = dump_yaml(block)
-        if new_cfg != agent_cfg:
-            write_text_atomic(AGENTS_YAML_PATH, dump_yaml(new_cfg))
-        return jsonify({"ok": True, "preview": preview, "msg": f"Profile ensured/added → {AGENTS_YAML_PATH}"})
+        profiles = agent_cfg.get("profiles")
+        if profiles is None or not isinstance(profiles, list):
+            profiles = []
+            agent_cfg["profiles"] = profiles
+        # Check existence by name
+        existing = None
+        for p in profiles:
+            if str(p.get("name", "")).strip().lower() == title.lower():
+                existing = p
+                break
+
+        new_block = {
+            "name": title,
+            "model": model,
+            "permissions": {
+                "apply_code_files": apply_code_files,
+                "read_files": read_files
+            },
+            "allowed_mcp_servers": allowed_mcp_servers,
+            "notes": notes
+        }
+
+        if existing:
+            # Replace existing block with new one (explicit overwrite to match requested schema)
+            idx = profiles.index(existing)
+            profiles[idx] = new_block
+            action = "updated"
+        else:
+            profiles.append(new_block)
+            action = "added"
+
+        write_text_atomic(AGENTS_YAML_PATH, dump_yaml(agent_cfg))
+        preview = dump_yaml(new_block)
+        return jsonify({"ok": True, "preview": preview, "msg": f'Profile {action} → {AGENTS_YAML_PATH}'})
     except Exception as e:
         return jsonify({"ok": False, "preview": "", "msg": f"Error: {e}"}), 500
 
@@ -827,7 +888,6 @@ def api_patch_router():
     data = request.get_json(force=True)
     title = to_title(data.get("name", "NewAgent"))
     rule_text = (data.get("rule") or "").strip()
-    # Prefer first line of rule if it starts with "<Title> — …"
     first = rule_text.splitlines()[0].strip() if rule_text else ""
     rule_title = first if ("—" in first and first.lower().startswith(
         title.lower())) else f"{title} — {policy_name_for_title(title)}"

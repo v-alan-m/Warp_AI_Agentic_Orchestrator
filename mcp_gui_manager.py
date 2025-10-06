@@ -371,6 +371,8 @@ HTML = r"""
     /* Optional: tighten pill spacing a bit */
     .mcp-pill { margin: 2px 0 0 0; }
     .mcp-label { display:block; margin:12px 0 8px; }
+    /* One-column variant for the two-card section */
+    .row2.single { grid-template-columns: 1fr; }
 </style>
 
   </style>
@@ -644,7 +646,7 @@ HTML = r"""
     </div>
   </div>
 
-  <div class="row2">
+  <div class="row2 single">
     <div class="card">
       <h3>2) Add Agent Profile → warp-agent-config.yaml</h3>
 

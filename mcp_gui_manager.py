@@ -6,10 +6,12 @@
 # This version:
 # - Uses fixed RULES_DIR = ./warp_config/warp_rules
 # - Header shows the active rules directory path
-# - “(Context: N rules)” includes a dropdown of rule files  preview textarea
+# - “(Context: N rules)” includes a dropdown of rule files + preview textarea
 # - AI-only rule creation (requires OPENAI_API_KEY; model gpt-5-chat-latest)
-# - Live view of warp-agent-config.yaml  live views of SUB_AGENTS and RULE_TITLES
-# - FIX: SUB_AGENTS patch now writes `"TitleName": "kebab-title"` (not just `"TitleName",`)
+# - Live view of warp-mcp-config.yaml  (auto-polling)
+# - Live view of warp-agent-config.yaml (auto-polling)
+# - SUB_AGENTS patch writes `"TitleName": "kebab-title"`
+# - Save MCP honors Warp schema ({ "mcpServers": { ... } }) and pretty-prints the whole file
 #
 # Run:
 #   pip install flask pyyaml openai python-dotenv
@@ -95,16 +97,16 @@ def dump_yaml(data: Any) -> str:
 # ---------------------------
 
 def to_kebab(name: str) -> str:
-    s = re.sub(r"[\s_]", "-", name.strip())
+    s = re.sub(r"[\s_]+", "-", name.strip())
     s = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", s)
     s = s.lower()
-    s = re.sub(r"[^a-z0-9\-]", "", s)
+    s = re.sub(r"[^a-z0-9\-]+", "", s)
     s = re.sub(r"-{2,}", "-", s).strip("-")
     return s
 
 
 def to_title(name: str) -> str:
-    parts = re.split(r"[\s\-_]", name.strip())
+    parts = re.split(r"[\s\-_]+", name.strip())
     return "".join(p.capitalize() for p in parts if p)
 
 
@@ -277,16 +279,6 @@ def apply_patch_again(src: str, agent_title: str, rule_title: str) -> str:
 
 def policy_name_for_title(title_name: str) -> str:
     t = title_name.lower()
-    if "ux" in t or "research" in t: return "Research Artifacts Policy"
-    if "design" in t or ("ui" in t and "front" not in t): return "Design Artifacts Policy"
-    if "front" in t: return "UI Policy"
-    if "back" in t or "api" in t or "service" in t: return "API & Services Policy"
-    if "file" in t: return "File Ops Policy"
-    if "git" in t: return "Safe Git Policy"
-    if "test" in t: return "Testing Policy"
-    if "proto" in t or "rapid" in t: return "Prototype Policy"
-    if "sprint" in t or "priorit" in t: return "Planning Policy"
-    if "router" in t or "taskrouter" in t: return "Orchestrator Policy"
     return f"{title_name} Policy"
 
 
@@ -418,6 +410,116 @@ HTML = r"""
             'agent-name: ' + d.kebab + '   |   Title: ' + d.title;
         });
     }
+
+    // --- Live preview of warp-mcp-config.yaml ---
+    let MCP_LAST_MTIME = null;
+    async function refreshMcpPreview() {
+      const r = await fetch('/get_mcp');
+      const j = await r.json();
+      document.getElementById('mcp_preview').value = j.text || '';
+    }
+    async function pollMcpPreview() {
+      try {
+        const r = await fetch('/get_mcp_mtime');
+        const j = await r.json();
+        const m = j.mtime || 0;
+        if (MCP_LAST_MTIME === null || m > MCP_LAST_MTIME) {
+          MCP_LAST_MTIME = m;
+          await refreshMcpPreview();
+        }
+      } catch (e) {}
+    }
+    // --- end live preview ---
+
+    // --- Live preview of warp-agent-config.yaml ---
+    let AGENTS_LAST_MTIME = null;
+    async function refreshAgentYaml() {
+      const r = await fetch('/get_agent_yaml');
+      const j = await r.json();
+      document.getElementById('agent_yaml_text').value = j.text || '';
+    }
+    async function pollAgentYaml() {
+      try {
+        const r = await fetch('/get_agent_yaml_mtime');
+        const j = await r.json();
+        const m = j.mtime || 0;
+        if (AGENTS_LAST_MTIME === null || m > AGENTS_LAST_MTIME) {
+          AGENTS_LAST_MTIME = m;
+          await refreshAgentYaml();
+        }
+      } catch (e) {}
+    }
+    // --- end live preview ---
+
+    async function genRule() {
+      const name = document.getElementById('agent_name').value;
+      const notes = document.getElementById('rule_notes').value;
+      const btn = document.getElementById('btn_gen');
+      const out = document.getElementById('rule_result');
+      btn.disabled = true; btn.textContent = 'Generating...';
+      out.textContent = '';
+      const r = await fetch('/ai_rule', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name, notes })
+      });
+      const j = await r.json();
+      btn.disabled = false; btn.textContent = 'AI: Generate/Refine Rule';
+      if (j.ok) {
+        document.getElementById('rule_text').value = j.text || '';
+      } else {
+        out.className = 'err small';
+        out.textContent = j.msg || 'Error';
+      }
+    }
+    async function saveMcp() {
+      const jsonText = document.getElementById('mcp_json').value;
+      const r = await fetch('/save_mcp', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ mcp_json: jsonText })
+      });
+      const j = await r.json();
+      const out = document.getElementById('mcp_result');
+      out.className = j.ok ? 'ok small' : 'err small';
+      out.textContent = j.msg;
+      if (j.ok && j.text) {
+        document.getElementById('mcp_preview').value = j.text;
+        // next poll will also reflect new mtime
+      }
+    }
+    async function addProfile() {
+      const name = document.getElementById('agent_name').value;
+      const r = await fetch('/add_profile', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name })
+      });
+      const j = await r.json();
+      const out = document.getElementById('profile_result');
+      document.getElementById('profile_preview').textContent = j.preview || '';
+      out.className = j.ok ? 'ok small' : 'err small';
+      out.textContent = j.msg || '';
+      // still refresh immediately
+      refreshAgentYaml();
+    }
+    async function patchRouter() {
+      const name = document.getElementById('agent_name').value;
+      const rule = document.getElementById('rule_text').value;
+      const r = await fetch('/patch_router', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name, rule })
+      });
+      const j = await r.json();
+      const out = document.getElementById('router_result');
+      out.className = j.ok ? 'ok small' : 'err small';
+      out.textContent = j.msg || '';
+      refreshRouterBlocks();
+    }
+    async function refreshRouterBlocks() {
+      const r = await fetch('/get_router_blocks');
+      const j = await r.json();
+      document.getElementById('sub_agents_box').value = j.sub_agents || '';
+      document.getElementById('rule_titles_box').value = j.rule_titles || '';
+    }
+
     async function refreshRulesMeta() {
       const r = await fetch('/rules_meta');
       const j = await r.json();
@@ -442,87 +544,23 @@ HTML = r"""
       const j = await r.json();
       document.getElementById('rules_view').value = j.text || '';
     }
-    async function genRule() {
-      const name = document.getElementById('agent_name').value;
-      const notes = document.getElementById('rule_notes').value;
-      const btn = document.getElementById('btn_gen');
-      const out = document.getElementById('rule_result');
-      btn.disabled = true; btn.textContent = 'Generating...';
-      out.textContent = '';
-      const r = await fetch('/ai_rule', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name, notes })
-      });
-      const j = await r.json();
-      btn.disabled = false; btn.textContent = 'AI: Generate/Refine Rule';
-      if (j.ok) {
-        document.getElementById('rule_text').value = j.text || '';
-      } else {
-        out.className = 'err small';
-        out.textContent = j.msg || 'Error';
-      }
-    }
-    async function refreshMcpPreview() {
-      const r = await fetch('/get_mcp');
-      const j = await r.json();
-      document.getElementById('mcp_preview').value = j.text || '';
-    }
-    async function saveMcp() {
-      const jsonText = document.getElementById('mcp_json').value;
-      const r = await fetch('/save_mcp', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ mcp_json: jsonText })
-      });
-      const j = await r.json();
-      const out = document.getElementById('mcp_result');
-      out.className = j.ok ? 'ok small' : 'err small';
-      out.textContent = j.msg;
-    }
-    async function addProfile() {
-      const name = document.getElementById('agent_name').value;
-      const r = await fetch('/add_profile', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name })
-      });
-      const j = await r.json();
-      const out = document.getElementById('profile_result');
-      document.getElementById('profile_preview').textContent = j.preview || '';
-      out.className = j.ok ? 'ok small' : 'err small';
-      out.textContent = j.msg || '';
-      if (j.ok && j.text) {
-        document.getElementById('mcp_preview').value = j.text;
-      }
-      refreshAgentYaml();
-    }
-    async function refreshAgentYaml() {
-      const r = await fetch('/get_agent_yaml');
-      const j = await r.json();
-      document.getElementById('agent_yaml_text').value = j.text || '';
-    }
-    async function patchRouter() {
-      const name = document.getElementById('agent_name').value;
-      const rule = document.getElementById('rule_text').value;
-      const r = await fetch('/patch_router', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name, rule })
-      });
-      const j = await r.json();
-      const out = document.getElementById('router_result');
-      out.className = j.ok ? 'ok small' : 'err small';
-      out.textContent = j.msg || '';
-      refreshRouterBlocks();
-    }
-    async function refreshRouterBlocks() {
-      const r = await fetch('/get_router_blocks');
-      const j = await r.json();
-      document.getElementById('sub_agents_box').value = j.sub_agents || '';
-      document.getElementById('rule_titles_box').value = j.rule_titles || '';
-    }
+
     window.addEventListener('DOMContentLoaded', ()=>{
+      // initial loads
       refreshMcpPreview();
       refreshRulesMeta();
       refreshAgentYaml();
       refreshRouterBlocks();
+      // polling loops (1.5s)
+      try {
+        pollMcpPreview();
+        setInterval(pollMcpPreview, 1500);
+      } catch (e) {}
+      try {
+        pollAgentYaml();
+        setInterval(pollAgentYaml, 1500);
+      } catch (e) {}
+      // rules select change
       const sel = document.getElementById('rules_select');
       if (sel) sel.addEventListener('change', ()=>loadRuleText(sel.value));
     });
@@ -543,7 +581,7 @@ HTML = r"""
       <span></span>
       <button id="mcp_json_copy_btn" class="btn secondary" onclick="copyById('mcp_json')">Copy</button>
     </div>
-    <textarea id="mcp_json" oninput="validateJSON()" placeholder='{"file-mcp": { "type":"stdio", "command":"node", "args":["..."] }}'></textarea>
+    <textarea id="mcp_json" oninput="validateJSON()" placeholder='{"file-mcp": { "command":"npx", "args":["-y","@modelcontextprotocol/server-filesystem","current_working_directory"], "env":{}, "working_directory":"current_working_directory" }}'></textarea>
     <p id="json_err" class="small">Paste JSON to validate…</p>
     <button class="btn" onclick="saveMcp()">Save MCP → warp-mcp-config.yaml</button>
     <p id="mcp_result" class="small"></p>
@@ -625,6 +663,7 @@ def api_to_kebab():
     return jsonify({"kebab": to_kebab(name), "title": to_title(name)})
 
 
+# Rules meta + preview
 @APP.get("/rules_meta")
 def api_rules_meta():
     if not os.path.isdir(RULES_DIR):
@@ -646,13 +685,29 @@ def api_rule_text():
         return jsonify({"text": f"# Error reading rule: {e}"})
 
 
-# Back-compat: still provide simple count
-@APP.get("/rules_count")
-def api_rules_count():
-    cnt, _ = load_rule_corpus()
-    return jsonify({"count": cnt})
+# MCP preview + mtime
+@APP.get("/get_mcp")
+def api_get_mcp():
+    try:
+        text = read_text(MCP_JSON_PATH) if os.path.exists(MCP_JSON_PATH) else "{}"
+    except Exception as e:
+        text = f'{{"#error": "{e}"}}'
+    return jsonify({"text": text})
 
 
+@APP.get("/get_mcp_mtime")
+def api_get_mcp_mtime():
+    try:
+        if os.path.exists(MCP_JSON_PATH):
+            m = os.path.getmtime(MCP_JSON_PATH)
+        else:
+            m = 0
+    except Exception:
+        m = 0
+    return jsonify({"mtime": m})
+
+
+# Agent YAML preview + mtime
 @APP.get("/get_agent_yaml")
 def api_get_agent_yaml():
     try:
@@ -662,6 +717,19 @@ def api_get_agent_yaml():
     return jsonify({"text": text})
 
 
+@APP.get("/get_agent_yaml_mtime")
+def api_get_agent_yaml_mtime():
+    try:
+        if os.path.exists(AGENTS_YAML_PATH):
+            m = os.path.getmtime(AGENTS_YAML_PATH)
+        else:
+            m = 0
+    except Exception:
+        m = 0
+    return jsonify({"mtime": m})
+
+
+# Router blocks (live)
 @APP.get("/get_router_blocks")
 def api_get_router_blocks():
     try:
@@ -672,6 +740,7 @@ def api_get_router_blocks():
     return jsonify({"sub_agents": sub, "rule_titles": rtl})
 
 
+# AI rule generation
 @APP.post("/ai_rule")
 def api_ai_rule():
     data = request.get_json(force=True)
@@ -685,41 +754,14 @@ def api_ai_rule():
         return jsonify({"ok": False, "msg": str(e), "context_rules": cnt}), 400
 
 
+# Save MCP (merge respecting Warp schema)
 def _normalize_mcp_payload(text: str) -> Dict[str, Any]:
-    """
-    Accept either:
-      A) {"MyServer": {...}, "OtherServer": {...}}
-      B) {"mcpServers": { "MyServer": {...} }}
-    Return always the *servers mapping* (not wrapped).
-    """
     obj = json.loads(text)
     if not isinstance(obj, dict):
-        raise ValueError("Top-level JSON must be an object.")
-
-    # Wrapped payload form
-    if "mcpServers" in obj:
-        servers = obj["mcpServers"]
-        if not isinstance(servers, dict):
-            raise ValueError('"mcpServers" must be an object mapping serverName → config')
-        return servers
-
-    # Bare payload form (preferred for GUI input)
-    # If user pasted a single bare config (has 'command'/'type'), guide them.
+        raise ValueError("Top-level JSON must be an object mapping serverName → config")
     if ("command" in obj) or ("type" in obj):
-        raise ValueError(
-            'Provide a mapping like {"MyServer": { ...config... }} '
-            'or wrap as {"mcpServers": { "MyServer": { ... } }}'
-        )
+        raise ValueError('Provide a mapping like {"MyServer": { ...config... }}')
     return obj
-
-
-@APP.get("/get_mcp")
-def api_get_mcp():
-    try:
-        text = read_text(MCP_JSON_PATH) if os.path.exists(MCP_JSON_PATH) else "{}"
-    except Exception as e:
-        text = f'{{"#error": "{e}"}}'
-    return jsonify({"text": text})
 
 
 @APP.post("/save_mcp")
@@ -730,6 +772,7 @@ def api_save_mcp():
         incoming = _normalize_mcp_payload(text)
     except Exception as e:
         return jsonify({"ok": False, "msg": f"JSON invalid: {e}"}), 400
+
     # Load existing (supports YAML/JSON), ensure dict
     try:
         existing = load_yaml_or_json(MCP_JSON_PATH) or {}
@@ -738,32 +781,30 @@ def api_save_mcp():
     except Exception:
         existing = {}
 
-    # --- Merge respecting Warp schema ---
-    # If the file already uses the Warp schema { "mcpServers": { ... } },
-    # merge into that inner object. Otherwise, treat the root as the servers map.
-    result = None
+    # Merge respecting Warp schema { "mcpServers": { ... } }
     if "mcpServers" in existing and isinstance(existing["mcpServers"], dict):
-        # Preserve any other top-level keys; only update mcpServers.
-        result = dict(existing)  # shallow copy
+        result = dict(existing)
         servers = dict(existing.get("mcpServers", {}))
         servers.update(incoming)
         result["mcpServers"] = servers
+        count = len(servers)
     else:
-        # No warp schema present; keep flat mapping and merge at root.
         result = dict(existing)
         result.update(incoming)
+        count = len(result)
 
     # Pretty-print full file and validate round-trip JSON
     pretty = dump_json_pretty(result)
     json.loads(pretty)  # round-trip validation
+
     try:
         write_text_atomic(MCP_JSON_PATH, pretty)
-        count = len(result.get("mcpServers", result))  # number of servers merged
         return jsonify({"ok": True, "msg": f"MCP servers updated → {MCP_JSON_PATH}", "text": pretty, "count": count})
     except Exception as e:
         return jsonify({"ok": False, "msg": f"Write failed: {e}"}), 500
 
 
+# Add agent profile
 @APP.post("/add_profile")
 def api_add_profile():
     data = request.get_json(force=True)
@@ -780,6 +821,7 @@ def api_add_profile():
         return jsonify({"ok": False, "preview": "", "msg": f"Error: {e}"}), 500
 
 
+# Patch router
 @APP.post("/patch_router")
 def api_patch_router():
     data = request.get_json(force=True)
@@ -819,5 +861,5 @@ def api_patch_router():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("MCP_MANAGER_GUI_PORT"))
+    port = int(os.environ.get("MCP_MANAGER_GUI_PORT", "5057"))
     APP.run(host="127.0.0.1", port=port, debug=True, use_reloader=True)

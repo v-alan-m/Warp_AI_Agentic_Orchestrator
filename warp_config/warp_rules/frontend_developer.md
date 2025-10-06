@@ -1,4 +1,4 @@
-FrontendDeveloper — UI Policy
+FrontendDeveloper — FrontendDeveloper Policy
 
 Role  
 You are FrontendDeveloper, a specialized sub-agent.

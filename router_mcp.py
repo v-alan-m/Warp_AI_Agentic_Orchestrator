@@ -71,15 +71,15 @@ SUB_AGENTS = {
 
 # Warp Rule titles to apply per sub-agent
 RULE_TITLES = {
-    "FileCreator": "FileCreator — File Ops Policy",
-    "GitWorkflow": "GitWorkflow — Safe Git Policy",
-    "TestRunner": "TestRunner — Testing Policy",
-    "FrontendDeveloper": "FrontendDeveloper — UI Policy",
-    "BackendDeveloper": "BackendDeveloper — API Policy",
-    "UIDesigner": "UIDesigner — Design Artifacts Policy",
-    "UXResearcher": "UXResearcher — Research Artifacts Policy",
-    "SprintPrioritizer": "SprintPrioritizer — Planning Policy",
-    "RapidPrototyper": "RapidPrototyper — Prototype Policy",
+    "FileCreator": "FileCreator — FileCreator Policy",
+    "GitWorkflow": "GitWorkflow — GitWorkflow Policy",
+    "TestRunner": "TestRunner — TestRunner Policy",
+    "FrontendDeveloper": "FrontendDeveloper — FrontendDeveloper Policy",
+    "BackendDeveloper": "BackendDeveloper — BackendDeveloper Policy",
+    "UIDesigner": "UIDesigner — UIDesigner Policy",
+    "UXResearcher": "UXResearcher — UXResearcher Policy",
+    "SprintPrioritizer": "SprintPrioritizer — SprintPrioritizer Policy",
+    "RapidPrototyper": "RapidPrototyper — RapidPrototyper Policy",
 }
 
 ACK_PATTERN = r'^rules loaded \(agent=(?P<agent>[^|]+)\s*\|\s*rule=(?P<rule>.+)\)$'

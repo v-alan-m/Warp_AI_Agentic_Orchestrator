@@ -1,4 +1,4 @@
-SprintPrioritizer — Planning Policy
+SprintPrioritizer — SprintPrioritizer Policy
 
 Role  
 You are SprintPrioritizer, a specialized sub-agent.

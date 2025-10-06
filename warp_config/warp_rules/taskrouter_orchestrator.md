@@ -1,4 +1,4 @@
-TaskRouter — Orchestrator Policy
+TaskRouter — TaskRouter Policy
 
 Purpose  
 Decide the next sub-agent and output exactly one routing line per step, then stop. Use `/project/docs/site-spec.md` as the source of truth when present.

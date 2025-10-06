@@ -107,16 +107,16 @@ For each profile:
 ## 5) Add Rules (system guardrails) in Warp
 Open **Warp Drive → Rules** and create *one Rule per profile* with the titles:
 
-- `TaskRouter — Orchestrator Policy`
-- `FileCreator — File Ops Policy`
-- `FrontendDeveloper — UI Policy`
-- `BackendDeveloper — API Policy`
-- `GitWorkflow — Safe Git Policy`
-- `TestRunner — Testing Policy`
-- `UIDesigner — Design Artifacts Policy`
-- `UXResearcher — Research Artifacts Policy`
-- `SprintPrioritizer — Planning Policy`
-- `RapidPrototyper — Prototype Policy`
+- `TaskRouter — TaskRouter Policy`
+- `FileCreator — FileCreator Policy`
+- `FrontendDeveloper — FrontendDeveloper Policy`
+- `BackendDeveloper — BackendDeveloper Policy`
+- `GitWorkflow — GitWorkflow Git Policy`
+- `TestRunner — TestRunner Policy`
+- `UIDesigner — UIDesigner Policy`
+- `UXResearcher — UXResearcher Policy`
+- `SprintPrioritizer — SprintPrioritizer Policy`
+- `RapidPrototyper — RapidPrototyper Policy`
 
 Paste the content from:
 - `warp_config/warp_rules/*.md`  (each role → its Rule text)

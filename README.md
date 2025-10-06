@@ -114,16 +114,16 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 ### 3) Rules (acts like system prompts)
 - Open **Warp Drive → Rules**
 - Create one Rule per profile with the exact titles:
-  - `TaskRouter — Orchestrator Policy`
-  - `FileCreator — File Ops Policy`
-  - `FrontendDeveloper — UI Policy`
-  - `BackendDeveloper — API Policy`
-  - `GitWorkflow — Safe Git Policy`
-  - `TestRunner — Testing Policy`
-  - `UIDesigner — Design Artifacts Policy`
-  - `UXResearcher — Research Artifacts Policy`
-  - `SprintPrioritizer — Planning Policy`
-  - `RapidPrototyper — Prototype Policy`
+  - `TaskRouter — TaskRouter Policy`
+  - `FileCreator — FileCreator Policy`
+  - `FrontendDeveloper — FrontendDeveloper Policy`
+  - `BackendDeveloper — BackendDeveloper Policy`
+  - `GitWorkflow — GitWorkflow Policy`
+  - `TestRunner — TestRunner Policy`
+  - `UIDesigner — UIDesigner Policy`
+  - `UXResearcher — UXResearcher Policy`
+  - `SprintPrioritizer — SprintPrioritizer Policy`
+  - `RapidPrototyper — RapidPrototyper Policy`
 - Paste the text from `warp_config/warp_rules/*.md` for each role.
 
 **Good to know:**  

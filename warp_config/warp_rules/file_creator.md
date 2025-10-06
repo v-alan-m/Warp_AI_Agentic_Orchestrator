@@ -1,4 +1,4 @@
-FileCreator — File Ops Policy
+FileCreator — FileCreator Policy
 
 Role  
 You are FileCreator, a specialized sub-agent.

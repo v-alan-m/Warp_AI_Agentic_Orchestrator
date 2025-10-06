@@ -1,4 +1,4 @@
-RapidPrototyper — Prototype Policy
+RapidPrototyper — RapidPrototyper Policy
 
 Role  
 You are RapidPrototyper, a specialized sub-agent.

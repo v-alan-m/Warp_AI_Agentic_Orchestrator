@@ -2,100 +2,79 @@ profiles:
   - name: TaskRouter
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: false
-      allow_file_read: false
-      allow_command_execution: false
+      apply_code_files: false
+      read_files: false
     allowed_mcp_servers: [router-mcp]
-    notes: |
-      Orchestrator. Converts brief → routing line → calls router-mcp with auto_loop:true.
-      Uses Rule "TaskRouter — Orchestrator Policy". Spec: /docs/site-spec.md.
+    notes: Rule "TaskRouter — TaskRouter Policy"
 
   - name: FileCreator
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: true
+      read_files: true
     allowed_mcp_servers: [file-mcp]
-    notes: |
-      File ops only. Writes under /project/src/. Rule "FileCreator — File Ops Policy".
+    notes: Rule "FileCreator — FileCreator Policy".
 
   - name: FrontendDeveloper
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: true
+      read_files: true
     allowed_mcp_servers: [file-mcp]
-    notes: |
-      UI only (HTML/CSS/JS/React). Rule "FrontendDeveloper — UI Policy". Spec: /docs/site-spec.md.
+    notes: Rule "FrontendDeveloper — FrontendDeveloper Policy".
 
   - name: BackendDeveloper
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: true
+      read_files: true
     allowed_mcp_servers: [file-mcp]
-    notes: |
-      APIs/services only. /project/src/server (or as instructed). Rule "BackendDeveloper — API Policy".
+    notes: Rule "BackendDeveloper — BackendDeveloper Policy".
 
   - name: GitWorkflow
     model: claude-haiku-latest
     permissions:
-      allow_file_write: false
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: false
+      read_files: true
     allowed_mcp_servers: [git-mcp, github-mcp]
-    notes: |
-      Local git via git-mcp; PR/issues via github-mcp. Explain commands first. Rule "GitWorkflow — Safe Git Policy".
+    notes: Rule "GitWorkflow — GitWorkflow Policy".
 
   - name: TestRunner
     model: claude-haiku-latest
     permissions:
-      allow_file_write: false
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: false
+      read_files: true
     allowed_mcp_servers: [test-mcp]
-    notes: |
-      Run & interpret tests; no edits. Rule "TestRunner — Testing Policy".
+    notes: Rule "TestRunner — TestRunner Policy".
 
   - name: UIDesigner
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: true
+      read_files: true
     allowed_mcp_servers: [superdesign-mcp, file-mcp]
-    notes: |
-      Wireframes/style guides/specs in /project/design/. Rule "UIDesigner — Design Artifacts Policy".
+    notes: Rule "UIDesigner — UIDesigner Policy".
 
   - name: UXResearcher
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: true
+      read_files: true
     allowed_mcp_servers: [superdesign-mcp, file-mcp]
-    notes: |
-      Personas/journey maps/findings in /project/ux-research/. Rule "UXResearcher — Research Artifacts Policy".
+    notes: Rule "UXResearcher — UXResearcher Policy".
 
   - name: SprintPrioritizer
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: true
+      read_files: true
     allowed_mcp_servers: [file-mcp]
-    notes: |
-      Backlog under /project/planning/. Rule "SprintPrioritizer — Planning Policy".
+    notes: Rule "SprintPrioritizer — SprintPrioritizer Policy".
 
   - name: RapidPrototyper
     model: claude-sonnet-latest
     permissions:
-      allow_file_write: true
-      allow_file_read: true
-      allow_command_execution: false
+      apply_code_files: true
+      read_files: true
     allowed_mcp_servers: [file-mcp]
-    notes: |
-      Prototypes under /project/prototypes/<name>/. Rule "RapidPrototyper — Prototype Policy".
+    notes: Rule "RapidPrototyper — RapidPrototyper Policy".

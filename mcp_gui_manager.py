@@ -12,7 +12,12 @@
 # - Live view of warp-agent-config.yaml (auto-polling)
 # - SUB_AGENTS patch writes `"TitleName": "kebab-title"`
 # - Save MCP honors Warp schema ({ "mcpServers": { ... } }) and pretty-prints the whole file
-# - NEW: Profile builder form (Title, Model dropdown, permissions checkboxes, allowed MCPs, auto notes)
+# - Profile builder:
+#     * Title, Model dropdown
+#     * Bold checkboxes for permissions (Apply Code Diffs, Read Files)
+#     * Bold dynamic checklist of MCP servers loaded from warp-mcp-config.yaml
+#     * Notes auto-fills to: Rule "<TitleName> — <PolicyName>"
+#     * Preview renders with two-space indent and '- name:' to match profiles list style
 #
 # Run:
 #   pip install flask pyyaml openai python-dotenv
@@ -338,7 +343,7 @@ HTML = r"""
     textarea, input[type=text], select { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, monospace; }
     textarea { min-height: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
     input[type=text], select { padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
-    .checkrow { display:flex; gap:12px; align-items:center; }
+    .checkrow { display:flex; gap:16px; align-items:center; flex-wrap: wrap; }
     .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; background: #fafafa; margin-bottom: 16px; }
     .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; cursor: pointer; }
     .btn.secondary { background: white; color: #111; }
@@ -349,6 +354,25 @@ HTML = r"""
     .grid2 { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .grid2b { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .bold { font-weight: 700; }
+    .badge { display:inline-block; background:#eef; color:#114; padding:2px 6px; border-radius:6px; border:1px solid #aac; margin-left:6px; }
+    .mcp-pill { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #ccc; border-radius:8px; padding:4px 8px; margin:4px 8px 0 0; }
+    .mcp-pill label { font-weight:700; }
+    <style>    
+    .form-block { margin-bottom: 10px; }
+    /* Horizontal flow + wrap for MCP pills */
+    .mcp-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;        /* row gap, column gap */
+    align-items: flex-start;
+    margin-top: 6px;
+    }
+    /* Optional: tighten pill spacing a bit */
+    .mcp-pill { margin: 2px 0 0 0; }
+    .mcp-label { display:block; margin:12px 0 8px; }
+</style>
+
   </style>
   <script>
     function copyById(id) {
@@ -396,6 +420,7 @@ HTML = r"""
         if (MCP_LAST_MTIME === null || m > MCP_LAST_MTIME) {
           MCP_LAST_MTIME = m;
           await refreshMcpPreview();
+          await populateMcpChecklist(); // ensure new servers show up
         }
       } catch (e) {}
     }
@@ -418,6 +443,35 @@ HTML = r"""
           await refreshAgentYaml();
         }
       } catch (e) {}
+    }
+
+    // --- MCP names -> checklist ---
+    async function populateMcpChecklist() {
+      try {
+        const r = await fetch('/mcp_names');
+        const j = await r.json();
+        const box = document.getElementById('mcp_checklist');
+        box.innerHTML = '';
+        (j.names || []).forEach(name => {
+          const id = 'mcp_' + name.replace(/[^a-zA-Z0-9_\-]/g,'_');
+          const wrap = document.createElement('div');
+          wrap.className = 'mcp-pill';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox'; cb.name = 'mcp_name'; cb.id = id; cb.value = name;
+          if (name === 'file-mcp') cb.checked = true;
+          const label = document.createElement('label');
+          label.setAttribute('for', id);
+          label.textContent = name;
+          wrap.appendChild(cb);
+          wrap.appendChild(label);
+          box.appendChild(wrap);
+        });
+        if ((j.names || []).length === 0) {
+          box.innerHTML = '<span class="small">No MCP servers found in warp-mcp-config.yaml</span>';
+        }
+      } catch (e) {
+        document.getElementById('mcp_checklist').innerHTML = '<span class="small err">Error loading MCP servers</span>';
+      }
     }
 
     // --- Derived "notes" content: Rule "<Title — Policy>" ---
@@ -466,19 +520,22 @@ HTML = r"""
         // next poll will also reflect new mtime
       }
     }
+
     async function addProfile() {
       const name  = document.getElementById('agent_name').value;
       const model = document.getElementById('model_select').value;
       const apply_code_files = document.getElementById('perm_apply_code_files').checked;
       const read_files       = document.getElementById('perm_read_files').checked;
-      const mcps_raw         = document.getElementById('allowed_mcp').value;
       const notes_text       = document.getElementById('notes').value;
+
+      // gather selected MCP servers
+      const selected = Array.from(document.querySelectorAll('input[name="mcp_name"]:checked')).map(el => el.value);
 
       const r = await fetch('/add_profile', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           name, model, apply_code_files, read_files,
-          allowed_mcp_servers: mcps_raw, notes: notes_text
+          allowed_mcp_servers: selected, notes: notes_text
         })
       });
       const j = await r.json();
@@ -529,6 +586,7 @@ HTML = r"""
         document.getElementById('rules_view').value = '';
       }
     }
+
     async function loadRuleText(name) {
       if (!name) return;
       const r = await fetch('/rule_text?name=' + encodeURIComponent(name));
@@ -536,12 +594,13 @@ HTML = r"""
       document.getElementById('rules_view').value = j.text || '';
     }
 
-    window.addEventListener('DOMContentLoaded', ()=>{
+    window.addEventListener('DOMContentLoaded', async ()=>{
       // initial loads
-      refreshMcpPreview();
-      refreshRulesMeta();
-      refreshAgentYaml();
-      refreshRouterBlocks();
+      await refreshMcpPreview();
+      await populateMcpChecklist();
+      await refreshRulesMeta();
+      await refreshAgentYaml();
+      await refreshRouterBlocks();
       // polling loops (1.5s)
       try { pollMcpPreview(); setInterval(pollMcpPreview, 1500); } catch (e) {}
       try { pollAgentYaml(); setInterval(pollAgentYaml, 1500); } catch (e) {}
@@ -589,32 +648,33 @@ HTML = r"""
     <div class="card">
       <h3>2) Add Agent Profile → warp-agent-config.yaml</h3>
 
-      <div class="grid2b">
-        <div>
-          <label>Model</label>
-          <select id="model_select">
-            <option value="claude-sonnet-latest" selected>claude-sonnet-latest</option>
-          </select>
-        </div>
-        <div>
-          <label>Allowed MCP Servers (comma-separated)</label>
-          <input type="text" id="allowed_mcp" value="file-mcp"/>
-        </div>
+      <div class="form-block bold">
+        <label>Model</label>
+        <select id="model_select" style="margin-top: 4px;">
+          <option value="claude-sonnet-latest" selected>claude-sonnet-latest</option>
+        </select>
       </div>
+    
+      <div class="form-block">
+        <label class="bold mcp-label">Allowed MCP Servers</label>
+        <div id="mcp_checklist" class="mcp-row"></div>
+      </div>
+
 
       <div class="checkrow" style="margin-top:8px;">
-        <label><input type="checkbox" id="perm_apply_code_files" checked/> Apply Code Diffs</label>
-        <label><input type="checkbox" id="perm_read_files" checked/> Read Files</label>
+        <label class="bold mcp-label"><input type="checkbox" id="perm_apply_code_files" checked/> Apply Code Diffs</label>
+        <label class="bold mcp-label"><input type="checkbox" id="perm_read_files" checked/> Read Files</label>
       </div>
 
-      <div style="margin-top:8px;">
-        <label>notes (auto)</label>
-        <input type="text" id="notes" readonly value='Rule "NewAgent — Policy"'/>
+      <div style="margin-top:12px;">
+        <label>Notes (auto)</label>
+        <input type="text" id="notes" readonly value='Rule "NewAgent — Policy"' style="margin-top:4px;"/>
       </div>
 
       <button class="btn" style="margin-top:12px;" onclick="addProfile()">Add Profile (Preview + Save)</button>
       <pre id="profile_preview" class="mono" style="min-height:120px;"></pre>
       <p id="profile_result" class="small"></p>
+
       <h4 class="small">Current warp-agent-config.yaml</h4>
       <textarea id="agent_yaml_text" readonly></textarea>
     </div>
@@ -658,6 +718,104 @@ HTML = r"""
 </html>
 """
 
+# --- Pretty-print helpers for profiles YAML -------------------------------
+
+def _inline_single_allowed_mcp(yaml_text: str) -> str:
+    """
+    Turns:
+      allowed_mcp_servers:
+        - router-mcp
+    into:
+      allowed_mcp_servers: [router-mcp]
+    (only when exactly one item)
+    """
+    import re
+    lines = yaml_text.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        out.append(line)
+        m = re.match(r"^(\s*)allowed_mcp_servers:\s*$", line)
+        if m:
+            base_indent = m.group(1)
+            items = []
+            j = i + 1
+            while j < n:
+                mj = re.match(rf"^{base_indent}\s*-\s*(.+?)\s*$", lines[j])
+                if mj:
+                    items.append(mj.group(1))
+                    j += 1
+                else:
+                    break
+            if len(items) == 1:
+                out[-1] = f"{base_indent}allowed_mcp_servers: [{items[0]}]"
+                i = j
+                continue
+        i += 1
+    return "\n".join(out) + ("\n" if not yaml_text.endswith("\n") else "")
+
+
+def _blank_line_between_profiles(yaml_text: str) -> str:
+    """
+    Insert a blank line between top-level items under 'profiles:'.
+    Assumes proper 2-space list indent ('  - ').
+    """
+    import re
+    lines = yaml_text.splitlines()
+    out = []
+    in_profiles = False
+    first_item = True
+
+    for idx, line in enumerate(lines):
+        if not in_profiles and line.strip() == "profiles:":
+            in_profiles = True
+            out.append(line)
+            continue
+
+        # Leave profiles block when we hit a top-level key or EOF.
+        if in_profiles and line and not line.startswith("  "):
+            in_profiles = False
+
+        if in_profiles and re.match(r"^\s{2}-\s", line):  # "  - "
+            if not first_item:
+                out.append("")  # blank line before subsequent items
+            first_item = False
+
+        out.append(line)
+
+    return "\n".join(out) + ("\n" if not yaml_text.endswith("\n") else "")
+
+
+def dump_yaml_profiles(data: dict) -> str:
+    """
+    Use a custom dumper so sequences under 'profiles:' are indented with 2 spaces,
+    then apply our two formatting passes: inline single allowed_mcp_servers and
+    blank line between top-level profile items.
+    """
+    import yaml
+
+    class IndentDumper(yaml.SafeDumper):
+        # Force PyYAML to indent sequences under mappings (no indentless lists)
+        def increase_indent(self, flow=False, indentless=False):
+            return super().increase_indent(flow, False)
+
+    text = yaml.dump(
+        data,
+        Dumper=IndentDumper,
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=False,
+        indent=2,
+        width=4096,
+    )
+    if not text.endswith("\n"):
+        text += "\n"
+
+    text = _inline_single_allowed_mcp(text)
+    text = _blank_line_between_profiles(text)
+    return text
 
 # ---------------------------
 # Flask routes
@@ -702,6 +860,22 @@ def api_rule_text():
         return jsonify({"text": read_text(path)})
     except Exception as e:
         return jsonify({"text": f"# Error reading rule: {e}"})
+
+
+# MCP servers names for checklist
+@APP.get("/mcp_names")
+def api_mcp_names():
+    try:
+        cfg = load_yaml_or_json(MCP_JSON_PATH) or {}
+        names = []
+        if isinstance(cfg, dict):
+            if "mcpServers" in cfg and isinstance(cfg["mcpServers"], dict):
+                names = list(cfg["mcpServers"].keys())
+            else:
+                names = list(cfg.keys())
+        return jsonify({"names": sorted(names)})
+    except Exception as e:
+        return jsonify({"names": [], "error": str(e)}), 200
 
 
 # MCP preview + mtime
@@ -823,7 +997,7 @@ def api_save_mcp():
         return jsonify({"ok": False, "msg": f"Write failed: {e}"}), 500
 
 
-# Add agent profile (NEW schema for your request)
+# Add agent profile (requested schema)
 @APP.post("/add_profile")
 def api_add_profile():
     data = request.get_json(force=True)
@@ -832,9 +1006,14 @@ def api_add_profile():
     apply_code_files = bool(data.get("apply_code_files", True))
     read_files = bool(data.get("read_files", True))
     notes_in = (data.get("notes") or "").strip()
-    # Parse allowed MCPs (comma/space separated)
-    raw_mcps = (data.get("allowed_mcp_servers") or "").strip()
-    allowed_mcp_servers = [s.strip() for s in re.split(r"[,\s]+", raw_mcps) if s.strip()] or ["file-mcp"]
+
+    # allowed MCPs can be a list (preferred) or a string
+    allowed_field = data.get("allowed_mcp_servers", [])
+    if isinstance(allowed_field, list):
+        allowed_mcp_servers = [str(s).strip() for s in allowed_field if str(s).strip()]
+    else:
+        raw = str(allowed_field or "").strip()
+        allowed_mcp_servers = [s.strip() for s in re.split(r"[,\s]+", raw) if s.strip()] or ["file-mcp"]
 
     # Derive rule title used in notes if empty
     profile_rule_title = f"{title} — {policy_name_for_title(title)}"
@@ -875,11 +1054,31 @@ def api_add_profile():
             profiles.append(new_block)
             action = "added"
 
-        write_text_atomic(AGENTS_YAML_PATH, dump_yaml(agent_cfg))
-        preview = dump_yaml(new_block)
-        return jsonify({"ok": True, "preview": preview, "msg": f'Profile {action} → {AGENTS_YAML_PATH}'})
+        # Write full file with pretty formatting (2-space list indent, blank lines)
+        pretty_yaml = dump_yaml_profiles(agent_cfg)
+        write_text_atomic(AGENTS_YAML_PATH, pretty_yaml)
+
+        # Preview a single item using same style (under 'profiles:')
+        preview_agent_cfg = {"profiles": [new_block]}
+        preview_yaml_full = dump_yaml_profiles(preview_agent_cfg)
+        # remove the 'profiles:' line from the preview box:
+        preview_lines = preview_yaml_full.splitlines()
+        if preview_lines and preview_lines[0].strip() == "profiles:":
+            preview_yaml = "\n".join(preview_lines[1:]) + "\n"
+        else:
+            preview_yaml = preview_yaml_full
+
+        return jsonify({
+            "ok": True,
+            "preview": preview_yaml,
+            "msg": f'Profile {action} → {AGENTS_YAML_PATH}'
+        })
     except Exception as e:
-        return jsonify({"ok": False, "preview": "", "msg": f"Error: {e}"}), 500
+        return jsonify({
+            "ok": False,
+            "preview": "",
+            "msg": f"Error: {e}"
+        }), 500
 
 
 # Patch router

@@ -36,7 +36,9 @@ profiles:
     permissions:
       apply_code_files: false
       read_files: true
-    allowed_mcp_servers: [git-mcp, github-mcp]
+    allowed_mcp_servers:
+      - git-mcp
+      - github-mcp
     notes: Rule "GitWorkflow — GitWorkflow Policy".
 
   - name: TestRunner
@@ -52,7 +54,9 @@ profiles:
     permissions:
       apply_code_files: true
       read_files: true
-    allowed_mcp_servers: [superdesign-mcp, file-mcp]
+    allowed_mcp_servers:
+      - superdesign-mcp
+      - file-mcp
     notes: Rule "UIDesigner — UIDesigner Policy".
 
   - name: UXResearcher
@@ -60,7 +64,9 @@ profiles:
     permissions:
       apply_code_files: true
       read_files: true
-    allowed_mcp_servers: [superdesign-mcp, file-mcp]
+    allowed_mcp_servers:
+      - superdesign-mcp
+      - file-mcp
     notes: Rule "UXResearcher — UXResearcher Policy".
 
   - name: SprintPrioritizer

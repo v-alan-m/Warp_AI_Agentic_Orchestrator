@@ -53,10 +53,12 @@
       "working_directory": "current_working_directory"
     },
     "router-mcp": {
-      "type": "http",
-      "url": "http://localhost:8085/route",
-      "headers": {},
-      "start_on_launch": true
+      "type": "python",
+      "args": ["mcp_router_shim.py"],
+      "env": {
+        "ROUTER_URL": "http://localhost:8085/route"
+      },
+      "working_directory": "current_working_directory",
     },
     "Context7": {
       "command": "npx",

@@ -348,4 +348,4 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.getenv("ROUTER_PORT", "8085"))
-    uvicorn.run("router_mcp:APP", host="127.0.0.0", port=port, reload=False)
+    uvicorn.run("router_mcp:APP", host="127.0.0.0", port=port, reload=True)

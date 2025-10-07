@@ -53,12 +53,14 @@
       "working_directory": "current_working_directory"
     },
     "router-mcp": {
-      "command": "python",
-      "args": ["mcp_router_shim.py"],
+      "command": ".\\.venv\\Scripts\\python.exe",
+      "args": [
+        "mcp_router_shim.py"
+      ],
       "env": {
-        "ROUTER_URL": "http://localhost:8085/route"
+        "ROUTER_URL": "http://127.0.0.1:8085/route"
       },
-      "working_directory": "current_working_directory",
+      "working_directory": "current_working_directory"
     },
     "Context7": {
       "command": "npx",

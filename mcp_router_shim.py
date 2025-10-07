@@ -2,7 +2,6 @@
 # MCP stdio server that exposes a "route" tool and forwards it to your FastAPI router.
 
 import os
-import json
 import requests
 from typing import Union, Dict, Any
 
@@ -47,5 +46,7 @@ def route(
         return r.text     # Fall back to text content
 
 if __name__ == "__main__":
+    print("Start server")
+
     # Default run mode is stdio; suitable for Warp's "command" MCP
     mcp.run()

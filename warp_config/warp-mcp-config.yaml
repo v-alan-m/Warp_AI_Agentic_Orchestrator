@@ -53,7 +53,7 @@
       "working_directory": "current_working_directory"
     },
     "router-mcp": {
-      "type": "python",
+      "command": "python",
       "args": ["mcp_router_shim.py"],
       "env": {
         "ROUTER_URL": "http://localhost:8085/route"

@@ -64,4 +64,5 @@ Write-Host ""
 # Run in the foreground (visible). Stop with Ctrl+C or closing the window.
 python -m uvicorn router_mcp:APP --host 127.0.0.1 --port $env:ROUTER_PORT --log-level info --no-use-colors
 
+# For Windows Powershell 7, run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 # Press Ctrl+C in that terminal to kill/stop the script.

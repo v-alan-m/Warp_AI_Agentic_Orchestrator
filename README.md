@@ -240,6 +240,8 @@ DONE
   - `router_mcp.py` — orchestrator with auto-loop + logs  
   - `docs/*` — logs + spec  
   - `project/src/*` — generated code
+- Request/Execution Pipeline (arrow notation)
+  - Warp tool call → stdio shim (mcp_router_shim.py) → FastAPI (router_mcp.py) → stdio shim ToolResult → Warp → TaskRouter
 
 ### 📦 Central MCP Servers Store
 

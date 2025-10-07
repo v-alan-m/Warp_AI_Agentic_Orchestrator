@@ -48,22 +48,27 @@ Warp_AI_Agentic_Orchestrator/
 ---
 
 ## 🛠️ Install & Run Router MCP
+### 1) Install Python deps
 ```bash
-# 1) Install Python deps
 pip install fastapi uvicorn pydantic
-
-# 2) (Optional) Set environment
+```
+### 2) (Optional) Set environment
+```bash
 export ROUTER_LOG_DIR="$(pwd)/docs"     # default: ./docs next to router_mcp.py
 export ROUTER_MAX_STEPS=17              # safety cap for auto-loop
 export ROUTER_ENFORCE_RULE_ACK=true     # require 'rules loaded (...)' ack
 export ROUTER_PORT=8085                 # default 8085
-
-# 3) Start the Router MCP (either script or python)
+```
+### 3) Start the Router MCP (either script or python)
+```bash
 # For macos/linux: 
-# ./orchestrator.sh
+./orchestrator.sh
+
 # For Windows Powershell 7: 
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
-# - tails /docs/build-summary.md and /docs/router_log.jsonl as steps run
+
+# View live logs in another terminal(s):
+- tails /docs/build-summary.md and /docs/router_log.jsonl as steps run
 ```
 
 ---

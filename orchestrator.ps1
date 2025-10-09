@@ -23,6 +23,11 @@ if (-not $env:ROUTER_MAX_STEPS)       { $env:ROUTER_MAX_STEPS = "17" }
 if (-not $env:ROUTER_ENFORCE_RULE_ACK){ $env:ROUTER_ENFORCE_RULE_ACK = "true" }
 if (-not $env:ROUTER_PORT)            { $env:ROUTER_PORT = "8085" }
 
+# NEW: behavior toggles (global)
+if (-not $env:ROUTER_FORCE_AUTORUN)     { $env:ROUTER_FORCE_AUTORUN     = "true" }  # false = manual
+if (-not $env:ROUTER_ECHO_INTERMEDIATE) { $env:ROUTER_ECHO_INTERMEDIATE = "true" }  # include step lines
+if (-not $env:ROUTER_STEPWISE_ECHO)     { $env:ROUTER_STEPWISE_ECHO     = "true" }  # auto-run but return each step
+
 $ProjectDirPosix  = ($ProjectDir -replace '\\','/')
 $ProjectDirWinEsc = ($ProjectDir -replace '\\','\\')
 
@@ -30,6 +35,9 @@ Write-Host "LOG_DIR      : $($env:ROUTER_LOG_DIR)"
 Write-Host "MAX_STEPS    : $($env:ROUTER_MAX_STEPS)"
 Write-Host "RULE_ACK     : $($env:ROUTER_ENFORCE_RULE_ACK)"
 Write-Host "ROUTER_PORT  : $($env:ROUTER_PORT)"
+Write-Host "AUTO_RUN     : {0}" -f $env:ROUTER_FORCE_AUTORUN
+Write-Host "ECHO_STEPS   : {0}" -f $env:ROUTER_ECHO_INTERMEDIATE
+Write-Host "STEPWISE     : {0}" -f $env:ROUTER_STEPWISE_ECHO
 Write-Host ""
 
 # Quick check uvicorn is present

@@ -148,9 +148,47 @@ rules loaded (agent=<Role> | rule=<Rule Title>)
 ---
 
 ## 🔁 Auto-Loop Toggle (How it Works)
-- **Manual**: send `"auto_loop": false` in Router requests (single-step).  
-- **Auto**: send `"auto_loop": true` (Router loops with TaskRouter to `DONE`).  
-- **Enforcement for kickoff**: the Router honors `from_taskrouter:true` on the **first** TaskRouter call and forces `auto_loop=true` (so a single human prompt launches a full run).
+
+### 1) Full Auto (silent)
+- **Settings**:
+    ```
+    ROUTER_FORCE_AUTORUN=true
+    ROUTER_STEPWISE_ECHO=false
+    (ROUTER_ECHO_FINAL can be true/false)
+    ```
+  - **Behavior**:
+    - Router loops internally to DONE in a single tool call.
+    - TaskRouter is quiet until the end.
+    - If `ROUTER_ECHO_FINAL=true`, step lines appear only in the final result/logs (not in chat).
+
+### 2) Auto-run with stepwise echo (semi-auto, visible)
+- **Settings**:
+    ```
+    ROUTER_FORCE_AUTORUN=true
+    ROUTER_STEPWISE_ECHO=true
+    ROUTER_ECHO_FINAL=true   ← recommended for visible lines
+    ```   
+    - **Behavior**:
+      - Router returns after each step with done:false and message:"Agent: …".
+      - TaskRouter immediately calls the router again (no human confirmation).
+      - You see each routing line in chat as it happens.
+
+### 3) Manual
+- **Settings**:
+    ```
+    ROUTER_FORCE_AUTORUN=false   (STEPWISE_ECHO doesn’t change that it’s manual)
+    (ROUTER_ECHO_FINAL optional)
+    ```
+  - **Behavior**:
+    - Router returns after each step and waits.
+    - TaskRouter shows the line and pauses; you type “continue/next” (or re-invoke) to proceed.
+
+### 4) Quick Reference:
+>`ROUTER_ECHO_FINAL` only controls whether **step lines are emitted/returned; it does NOT change auto vs manual**.
+
+>> For “**auto + visible steps**,” use: `FORCE_AUTORUN=true`, `STEPWISE_ECHO=true`, `ECHO_INTERMEDIATE=true`.
+
+>> For “**fully silent auto**,” use: `FORCE_AUTORUN=true`, `STEPWISE_ECHO=false` `(ECHO_INTERMEDIATE optional)`.
 
 ---
 
@@ -250,7 +288,6 @@ DONE
   - For each MCP server, sometimes specific file paths will have to be referenced within the respective Warp MCP server config JSON 
 > Having dedicated MCP folder prevents having to change the stored path(s) in that MCP server JSON config, when changing projects.
 > > Note: The `working directory` value will still have to be changed when switching projects.
-
 
 ---
 

@@ -22,15 +22,23 @@ mkdir -p "$DOCS_DIR"
 : > "$DOCS_DIR/CHANGELOG.md"       || true
 
 # --- Environment (defaults; keep in sync with README) ---
-: "${ROUTER_LOG_DIR:=$DOCS_DIR}"
-: "${ROUTER_MAX_STEPS:=17}"
-: "${ROUTER_ENFORCE_RULE_ACK:=true}"
-: "${ROUTER_PORT:=8085}"
+export ROUTER_LOG_DIR="${ROUTER_LOG_DIR:-$DOCS_DIR}"
+export ROUTER_MAX_STEPS="${ROUTER_MAX_STEPS:-17}"
+export ROUTER_ENFORCE_RULE_ACK="${ROUTER_ENFORCE_RULE_ACK:-true}"
+export ROUTER_PORT="${ROUTER_PORT:-8085}"
+
+# NEW: behavior toggles (global)
+export ROUTER_FORCE_AUTORUN="${ROUTER_FORCE_AUTORUN:-true}"         # false = manual
+export ROUTER_ECHO_INTERMEDIATE="${ROUTER_ECHO_INTERMEDIATE:-true}" # include step lines
+export ROUTER_STEPWISE_ECHO="${ROUTER_STEPWISE_ECHO:-true}"         # auto-run but return each step
 
 echo "LOG_DIR      : $ROUTER_LOG_DIR"
 echo "MAX_STEPS    : $ROUTER_MAX_STEPS"
 echo "RULE_ACK     : $ROUTER_ENFORCE_RULE_ACK"
 echo "ROUTER_PORT  : $ROUTER_PORT"
+echo "AUTO_RUN     : $ROUTER_FORCE_AUTORUN"
+echo "ECHO_STEPS   : $ROUTER_ECHO_INTERMEDIATE"
+echo "STEPWISE     : $ROUTER_STEPWISE_ECHO"
 echo
 
 # --- Placement Guidance (POSIX for Profiles, double-backslash Windows for MCP Servers JSON) ---

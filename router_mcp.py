@@ -49,7 +49,10 @@ def _as_bool(v: str, default: bool) -> bool:
 # Overrides TaskRouter kickoff auto_loop when from_taskrouter=true
 ROUTER_FORCE_AUTORUN = _as_bool(os.getenv("ROUTER_FORCE_AUTORUN"), True)
 # When true, record/return intermediate routing lines (non-blocking; no streaming)
-ROUTER_ECHO_INTERMEDIATE = _as_bool(os.getenv("ROUTER_ECHO_INTERMEDIATE"), False)
+ROUTER_ECHO_FINAL = _as_bool(os.getenv("ROUTER_ECHO_FINAL"), False)
+# When true, even in auto-run we return after each step so TaskRouter can echo the line to chat,
+# then immediately call us again (semi-auto with chat echo).
+ROUTER_STEPWISE_ECHO = _as_bool(os.getenv("ROUTER_STEPWISE_ECHO"), False)
 
 LOG_DIR = os.getenv("ROUTER_LOG_DIR", os.path.join(os.path.dirname(__file__), "docs"))
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -268,7 +271,7 @@ def route_task(request: RouteRequest):
 
     step = 0
     current_task = request.task
-    echo_transcript = []  # collected only when ROUTER_ECHO_INTERMEDIATE is true
+    echo_transcript = []  # collected only when ROUTER_ECHO_FINAL is true
 
     while True:
         step += 1
@@ -298,7 +301,7 @@ def route_task(request: RouteRequest):
             "instruction": guarded_instruction
         })
 
-        if ROUTER_ECHO_INTERMEDIATE:
+        if ROUTER_ECHO_FINAL:
             # Keep a human-readable, minimal routing echo (without the rule preamble)
             echo_line = f"{sub_agent}: {raw_instruction}"
             echo_transcript.append(echo_line)
@@ -349,11 +352,12 @@ def route_task(request: RouteRequest):
             "response_preview": (agent_response or "")[:4000]
         })
 
-        # Auto-loop end?
+        # Step boundaries:
+        # 1) Manual mode: return after each step (message contains the latest line when echoing).
         if not request.auto_loop:
             # In manual mode, return the latest line in message so Warp can show it now
             msg = "step_complete"
-            if ROUTER_ECHO_INTERMEDIATE and echo_transcript:
+            if ROUTER_ECHO_FINAL and echo_transcript:
                 msg = echo_transcript[-1]
             return RouteResponse(
                 ok=True,
@@ -363,6 +367,20 @@ def route_task(request: RouteRequest):
                 message = msg,
                 done = False
             )
+        # 2) Auto-run + stepwise echo: still auto, but return after each step so TaskRouter can echo to chat,
+        # then TaskRouter should immediately call us again with same workflow_id until done.
+        if request.auto_loop and ROUTER_STEPWISE_ECHO:
+            msg = "continue"
+        if ROUTER_ECHO_FINAL and echo_transcript:
+            msg = echo_transcript[-1]
+        return RouteResponse(
+            ok=True,
+            workflow_id = workflow_id,
+            step = step,
+            agent = sub_agent,
+            message = msg,
+            done = False
+        )
 
         # Ask TaskRouter for next routing line (INTEGRATE THIS WITH WARP)
         next_task = call_taskrouter_next_step(sub_agent, agent_response).strip()
@@ -379,7 +397,7 @@ def route_task(request: RouteRequest):
                 agent=sub_agent,
                 done=True,
                 message="done",
-                echo_transcript=echo_transcript if ROUTER_ECHO_INTERMEDIATE else None
+                echo_transcript=echo_transcript if ROUTER_ECHO_FINAL else None
             )
 
         # Otherwise continue

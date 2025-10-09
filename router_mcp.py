@@ -40,6 +40,17 @@ from pydantic import BaseModel
 
 APP = FastAPI(title="Warp Router MCP")
 
+# Global switches
+def _as_bool(v: str, default: bool) -> bool:
+    if v is None:
+        return default
+    return str(v).strip().lower() in ("1", "true", "yes", "on")
+
+# Overrides TaskRouter kickoff auto_loop when from_taskrouter=true
+ROUTER_FORCE_AUTORUN = _as_bool(os.getenv("ROUTER_FORCE_AUTORUN"), True)
+# When true, record/return intermediate routing lines (non-blocking; no streaming)
+ROUTER_ECHO_INTERMEDIATE = _as_bool(os.getenv("ROUTER_ECHO_INTERMEDIATE"), False)
+
 LOG_DIR = os.getenv("ROUTER_LOG_DIR", os.path.join(os.path.dirname(__file__), "docs"))
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -106,6 +117,7 @@ class RouteResponse(BaseModel):
     agent: Optional[str] = None
     message: Optional[str] = None
     done: bool = False
+    echo_transcript: Optional[list[str]] = None  # Optional extras when echoing is enabled
 
 
 # -----------------------------
@@ -243,9 +255,9 @@ def route_task(request: RouteRequest):
     """
     workflow_id = ensure_workflow_id(request)
 
-    # Enforce auto-loop at kickoff when called by TaskRouter
-    if request.from_taskrouter and request.auto_loop is False:
-        request.auto_loop = True
+    # Enforce global auto-run policy for TaskRouter kickoffs
+    if request.from_taskrouter:
+        request.auto_loop = bool(ROUTER_FORCE_AUTORUN)
 
     # Early DONE (allows TaskRouter to finish)
     if request.task.strip().upper().startswith("DONE"):
@@ -256,6 +268,7 @@ def route_task(request: RouteRequest):
 
     step = 0
     current_task = request.task
+    echo_transcript = []  # collected only when ROUTER_ECHO_INTERMEDIATE is true
 
     while True:
         step += 1
@@ -283,6 +296,18 @@ def route_task(request: RouteRequest):
             "step": step,
             "agent": sub_agent,
             "instruction": guarded_instruction
+        })
+
+        if ROUTER_ECHO_INTERMEDIATE:
+            # Keep a human-readable, minimal routing echo (without the rule preamble)
+            echo_line = f"{sub_agent}: {raw_instruction}"
+            echo_transcript.append(echo_line)
+            log_event_jsonl({
+                "ts": ts(),
+                "workflow_id": workflow_id,
+                "type": "echo",
+                "step": step,
+                "line": echo_line
         })
 
         # Call sub-agent (INTEGRATE THIS WITH WARP)
@@ -326,8 +351,18 @@ def route_task(request: RouteRequest):
 
         # Auto-loop end?
         if not request.auto_loop:
-            return RouteResponse(ok=True, workflow_id=workflow_id, step=step, agent=sub_agent, message="step_complete",
-                                 done=False)
+            # In manual mode, return the latest line in message so Warp can show it now
+            msg = "step_complete"
+            if ROUTER_ECHO_INTERMEDIATE and echo_transcript:
+                msg = echo_transcript[-1]
+            return RouteResponse(
+                ok=True,
+                workflow_id = workflow_id,
+                step = step,
+                agent = sub_agent,
+                message = msg,
+                done = False
+            )
 
         # Ask TaskRouter for next routing line (INTEGRATE THIS WITH WARP)
         next_task = call_taskrouter_next_step(sub_agent, agent_response).strip()
@@ -337,8 +372,15 @@ def route_task(request: RouteRequest):
             final_summary = next_task.split("\n", 1)[1] if "\n" in next_task else ""
             finalize_markdown(workflow_id, final_summary)
             log_event_jsonl({"ts": ts(), "workflow_id": workflow_id, "type": "done", "summary": final_summary})
-            return RouteResponse(ok=True, workflow_id=workflow_id, step=step, agent=sub_agent, done=True,
-                                 message="done")
+            return RouteResponse(
+                ok=True,
+                workflow_id=workflow_id,
+                step=step,
+                agent=sub_agent,
+                done=True,
+                message="done",
+                echo_transcript=echo_transcript if ROUTER_ECHO_INTERMEDIATE else None
+            )
 
         # Otherwise continue
         current_task = next_task
@@ -348,4 +390,5 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.getenv("ROUTER_PORT", "8085"))
-    uvicorn.run("router_mcp:APP", host="127.0.0.0", port=port, reload=True)
+    # host fix: 127.0.0.1 is the loopback (127.0.0.0 is a network id)
+    uvicorn.run("router_mcp:APP", host="127.0.0.1", port=port, reload=True)

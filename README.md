@@ -70,7 +70,6 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 # View live logs in another terminal(s):
 - tails /docs/build-summary.md and /docs/router_log.jsonl as steps run
 ```
-
 ---
 
 ## 🧩 Warp UI Setup (Profiles, MCP Servers, Rules)
@@ -159,7 +158,8 @@ rules loaded (agent=<Role> | rule=<Rule Title>)
 
 ### 0) Launch Router MCP
 ```bash
-./orchestrator.sh
+./orchestrator.sh (macos/Linux)
+./orchestrator.ps1 (Windows)
 # Tails /docs/build-summary.md and /docs/router_log.jsonl
 ```
 
@@ -255,9 +255,13 @@ DONE
 ---
 
 ## ✅ Summary
-- **One prompt** launches a full, logged, policy-guarded build to `DONE`
-- Warp keeps calling the LLM; Router orchestrates + logs
-- Profiles are **least-privilege**; Rules are auto-applied & acknowledged
-- All artifacts are auditable under `/docs/`
+- Add GitHub API key and add to MCP server → ✅ Better: export **`GITHUB_TOKEN`** in your shell; MCP inherits it
+- Add MCP servers into Warp config → ✅ Paste JSON from `warp_config/warp-mcp-config.yaml` (fix absolute paths)
+- Add agents to Warp config → ✅ Create profiles in Warp UI, mirror `warp-agent-config.yaml`, then add **Rules**
+- Run orchestrator.ps1 → ✅ Start Router **before** first prompt
+- Run first prompt → ✅ Paste into **TaskRouter** chat (auto-loop to `DONE`)
+- Notes:
+  - **Manual** vs **auto-run** modes:
+    - [docs/manual_and_auto-run_modes.md](docs/manual_and_auto-run_modes.md)
 
-Happy building! 🛠️✨
+

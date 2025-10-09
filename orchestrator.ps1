@@ -25,8 +25,12 @@ if (-not $env:ROUTER_PORT)            { $env:ROUTER_PORT = "8085" }
 
 # NEW: behavior toggles (global)
 if (-not $env:ROUTER_FORCE_AUTORUN)     { $env:ROUTER_FORCE_AUTORUN     = "true" }  # false = manual
-if (-not $env:ROUTER_ECHO_INTERMEDIATE) { $env:ROUTER_ECHO_INTERMEDIATE = "true" }  # include step lines
+if (-not $env:ROUTER_ECHO_FINAL) { $env:ROUTER_ECHO_FINAL = "true" }  # include step lines
 if (-not $env:ROUTER_STEPWISE_ECHO)     { $env:ROUTER_STEPWISE_ECHO     = "true" }  # auto-run but return each step
+
+# --- Resolve Python interpreter (prefer repo venv) ---
+$Python = Join-Path $ScriptDir ".venv\Scripts\python.exe"
+if (-not (Test-Path $Python)) { $Python = "python" }
 
 $ProjectDirPosix  = ($ProjectDir -replace '\\','/')
 $ProjectDirWinEsc = ($ProjectDir -replace '\\','\\')
@@ -35,14 +39,19 @@ Write-Host "LOG_DIR      : $($env:ROUTER_LOG_DIR)"
 Write-Host "MAX_STEPS    : $($env:ROUTER_MAX_STEPS)"
 Write-Host "RULE_ACK     : $($env:ROUTER_ENFORCE_RULE_ACK)"
 Write-Host "ROUTER_PORT  : $($env:ROUTER_PORT)"
-Write-Host "AUTO_RUN     : {0}" -f $env:ROUTER_FORCE_AUTORUN
-Write-Host "ECHO_STEPS   : {0}" -f $env:ROUTER_ECHO_INTERMEDIATE
-Write-Host "STEPWISE     : {0}" -f $env:ROUTER_STEPWISE_ECHO
+Write-Host "AUTO_RUN     : $($env:ROUTER_FORCE_AUTORUN)"
+Write-Host "ECHO_STEPS   : $($env:ROUTER_ECHO_FINAL)"
+Write-Host "STEPWISE     : $($env:ROUTER_STEPWISE_ECHO)"
+Write-Host "PYTHON       : $Python"
 Write-Host ""
 
-# Quick check uvicorn is present
-$uv = & python -c "import pkgutil; import sys; sys.exit(0 if pkgutil.find_loader('uvicorn') else 1)"; if ($LASTEXITCODE -ne 0) {
-  Write-Host "❌ uvicorn not found. Run:  python -m pip install uvicorn fastapi pydantic"
+# Quick check required modules are present (in the SAME interpreter we'll run)
+$probe = 'import importlib.util, sys; mods=["uvicorn","fastapi","pydantic"]; sys.exit(0 if all(importlib.util.find_spec(m) for m in mods) else 1)'
+& $Python -c $probe
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "❌ Required modules not found in this interpreter."
+  Write-Host "   Install into this venv/interpreter:"
+  Write-Host "   $Python -m pip install uvicorn fastapi pydantic"
   exit 1
 }
 
@@ -70,7 +79,7 @@ Write-Host "Starting router_mcp server (router_mcp.py):"
 Write-Host ""
 
 # Run in the foreground (visible). Stop with Ctrl+C or closing the window.
-python -m uvicorn router_mcp:APP --host 127.0.0.1 --port $env:ROUTER_PORT --log-level info --no-use-colors
+& $Python -m uvicorn router_mcp:APP --host 127.0.0.1 --port $env:ROUTER_PORT --log-level info --no-use-colors
 
 # For Windows Powershell 7, run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 # Press Ctrl+C in that terminal to kill/stop the script.

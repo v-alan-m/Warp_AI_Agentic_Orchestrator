@@ -49,7 +49,7 @@ Write-Host ""
 $probe = 'import importlib.util, sys; mods=["uvicorn","fastapi","pydantic"]; sys.exit(0 if all(importlib.util.find_spec(m) for m in mods) else 1)'
 & $Python -c $probe
 if ($LASTEXITCODE -ne 0) {
-  Write-Host "❌ Required modules not found in this interpreter."
+  Write-Host "❌ Required modules not found in this interpreter (If .venv present, activate it using: .\.venv\Scripts\activate)"
   Write-Host "   Install into this venv/interpreter:"
   Write-Host "   $Python -m pip install uvicorn fastapi pydantic"
   exit 1

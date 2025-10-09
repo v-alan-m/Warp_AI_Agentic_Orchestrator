@@ -71,7 +71,7 @@ import importlib.util, sys
 sys.exit(0 if importlib.util.find_spec("uvicorn") else 1)
 PY
 then
-  echo "❌ uvicorn not found in this interpreter."
+  echo "❌ uvicorn not found in this interpreter. (If .venv present, activate it using: source .venv/bin/activate")
   echo "   Install into your venv (recommended) or current Python:"
   echo "   $PYTHON -m pip install uvicorn fastapi pydantic"
   exit 1

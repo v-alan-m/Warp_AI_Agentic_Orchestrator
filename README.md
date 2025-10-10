@@ -28,11 +28,15 @@ Warp_AI_Agentic_Orchestrator/
 │   │   ├── ...
 │   ├── warp-agent-config.yaml
 │   └── warp-mcp-config.yaml
-├── instructions.md
+├── .env                       # Create this file and keep it local, as it is in .gitignore
+├── .gitignore
 ├── LICENSE
+├── mcp_gui_manager.py
+├── mcp_router_shim.py
 ├── orchestrator.ps1           # One-command launcher + live tail (Windows)
 ├── orchestrator.sh            # One-command launcher + live tail (macOS/Linux)
 ├── README.md
+├── requirements.txt
 └── router_mcp.py              # Router MCP server (Markdown + JSONL logs, auto-loop, workflow_id)
 ```
 

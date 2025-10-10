@@ -112,9 +112,23 @@ def to_kebab(name: str) -> str:
 
 
 def to_title(name: str) -> str:
-    parts = re.split(r"[\s\-_]+", name.strip())
-    return "".join(p.capitalize() for p in parts if p)
-
+    """
+    Normalize to a Title/PascalCase label while preserving existing inner capitals.
+    - "file creator" -> "FileCreator"
+    - "file_creator" -> "FileCreator"
+    - "fileCreator"  -> "FileCreator"
+    - "FileCreator"  -> "FileCreator" (unchanged)
+    """
+    s = name.strip()
+    if not s:
+       return ""
+    words = [w for w in re.split(r"[\s\-_]+", s) if w]
+    if len(words) >= 2:
+       # Capitalize only the first letter of each token; preserve the rest
+       return "".join(w[:1].upper() + w[1:] for w in words)
+    # Single token: ensure first letter is upper, keep rest as-is (preserve CamelCase)
+    w = words[0]
+    return w[:1].upper() + w[1:]
 
 # ---------------------------
 # Rules corpus

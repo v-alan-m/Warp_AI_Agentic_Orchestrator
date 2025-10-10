@@ -80,7 +80,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 
 > Goal: Warp remains the **caller** of the LLM; Router MCP orchestrates & logs.
 
-### 1) MCP Servers
+### 1) 🖥️ MCP Servers
 - Open **Warp → Settings → AI → MCP Servers**
 - Use the **JSON** input method and paste the **one-shot JSON** from this repo’s `warp_config/warp-mcp-config.yaml` (**do not retype**; just copy/paste it into Warp).  
   - That JSON registers:
@@ -97,7 +97,15 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 > `IMPORTANT`:  Before starting update the absolute paths in all the MCP servers.
 > > **So the agents can only edit files inside that folder and never anything outside if it.**
 
-### 2) Profiles (Agents)
+### 2) 📦 IMPORTANT: Local MCP Servers
+
+- `Important`: Some open-sourse repos such as test-mcp will have to be `cloned and run locally`, instead of using `npx`.
+  - Keep them in a `single shared folder outside your project` so you don’t re-clone per repo.
+  - For each MCP server, sometimes specific file paths will have to be referenced within the respective Warp MCP server config JSON 
+> Having dedicated MCP folder prevents having to change the stored path(s) in that MCP server JSON config, when changing projects.
+> > Note: The `working directory` value will still have to be changed when switching projects.
+
+### 3) 🖼️ Profiles (Agents)
 - Open **Warp → Settings → AI → Profiles + Add**
 - Create profiles named exactly:
   - `TaskRouter`, `FileCreator`, `FrontendDeveloper`, `BackendDeveloper`, `TestRunner`, `GitWorkflow`, `UIDesigner`, `UXResearcher`, `SprintPrioritizer`, `RapidPrototyper`
@@ -119,7 +127,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 
 > Use `warp_config/warp-agent-config.yaml` as the authoritative checklist (drag/drop to view; copy values into Warp UI).
 
-### 3) Rules (acts like system prompts)
+### 4) ⚖️ Rules (acts like system prompts)
 - Open **Warp Drive → Rules**
 - Create one Rule per profile with the exact titles:
   - `TaskRouter — TaskRouter Policy`
@@ -141,7 +149,7 @@ rules loaded (agent=<Role> | rule=<Rule Title>)
 ```
 - No extra user action needed in chat; the Router guarantees each profile loads its Rule before executing.
 
-### 5) Sanity Check
+### 5) 🧠 Sanity Check
 - Start the Router MCP:
   ```bash
   ./orchestrator.sh
@@ -282,16 +290,8 @@ DONE
   - `router_mcp.py` — orchestrator with auto-loop + logs  
   - `docs/*` — logs + spec  
   - `project/src/*` — generated code
-- Request/Execution Pipeline (arrow notation)
-  - Warp tool call → stdio shim (mcp_router_shim.py) → FastAPI (router_mcp.py) → stdio shim ToolResult → Warp → TaskRouter
-
-### 📦 Central MCP Servers Store
-
-- `Important`: Some open-sourse repos such as test-mcp will have to be `cloned and run locally`, instead of using `npx`.
-  - Keep them in a `single shared folder outside your project` so you don’t re-clone per repo.
-  - For each MCP server, sometimes specific file paths will have to be referenced within the respective Warp MCP server config JSON 
-> Having dedicated MCP folder prevents having to change the stored path(s) in that MCP server JSON config, when changing projects.
-> > Note: The `working directory` value will still have to be changed when switching projects.
+> Request/Execution Pipeline (arrow notation):
+>> **Warp tool call → stdio shim (mcp_router_shim.py) → FastAPI (router_mcp.py) → stdio shim ToolResult → Warp → TaskRouter**
 
 ---
 

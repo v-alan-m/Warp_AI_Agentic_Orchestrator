@@ -225,7 +225,7 @@ Use /docs/site-spec.md as the source of truth. Execute the full build:
 - Implement About and minimal JS
 - Commit safely
 
-Respond only with routing lines internally via router-mcp (auto_loop:true).
+Respond only with routing lines internally via router-mcp.
 When complete, output:
 DONE
 <1–3 sentence final summary>

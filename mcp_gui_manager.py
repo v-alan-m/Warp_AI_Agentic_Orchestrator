@@ -387,8 +387,6 @@ HTML = r"""
     .mcp-label { display:block; margin:12px 0 8px; }
     /* One-column variant for the two-card section */
     .row2.single { grid-template-columns: 1fr; }
-</style>
-
   </style>
   <script>
     function copyById(id) {
@@ -641,13 +639,13 @@ HTML = r"""
     <div class="grid2">
       <span class="small">Paste JSON below</span>
       <span></span>
-      <button id="mcp_json_copy_btn" class="btn secondary" onclick="copyById('mcp_json')">Copy</button>
+      <!--<button id="mcp_json_copy_btn" class="btn secondary" onclick="copyById('mcp_json')">Copy</button>-->
     </div>
     <textarea id="mcp_json" oninput="validateJSON()" placeholder='{"file-mcp": { "command":"npx", "args":["-y","@modelcontextprotocol/server-filesystem","current_working_directory"], "env":{}, "working_directory":"current_working_directory" }}'></textarea>
     <p id="json_err" class="small">Paste JSON to validate…</p>
     <button class="btn" onclick="saveMcp()">Save MCP → warp-mcp-config.yaml</button>
     <p id="mcp_result" class="small"></p>
-    <h4 class="small">Current warp-mcp-config.yaml</h4>
+    <h4 class="small">Current warp-mcp-config.yaml:</h4>
     <textarea id="mcp_preview" readonly></textarea>
   </div>
 
@@ -691,7 +689,7 @@ HTML = r"""
       <pre id="profile_preview" class="mono" style="min-height:120px;"></pre>
       <p id="profile_result" class="small"></p>
 
-      <h4 class="small">Current warp-agent-config.yaml</h4>
+      <h4 class="small">Current warp-agent-config.yaml (This is only a reference, to add agents go to Warp's settings and enter these created settings):</h4>
       <textarea id="agent_yaml_text" readonly></textarea>
     </div>
 
@@ -719,11 +717,11 @@ HTML = r"""
     <p id="router_result" class="small"></p>
     <div class="grid3">
       <div>
-        <h4 class="small">SUB_AGENTS (live)</h4>
+        <h4 class="small">SUB_AGENTS (refresh webpage to see new changes):</h4>
         <textarea id="sub_agents_box" readonly></textarea>
       </div>
       <div>
-        <h4 class="small">RULE_TITLES (live)</h4>
+        <h4 class="small">RULE_TITLES (refresh webpage to see new changes):</h4>
         <textarea id="rule_titles_box" readonly></textarea>
       </div>
     </div>

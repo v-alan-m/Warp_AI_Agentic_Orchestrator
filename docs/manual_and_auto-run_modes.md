@@ -84,7 +84,7 @@ Behind-the-scenes flow:
    ```json
    {
      "next_agent": "FrontendDeveloper",
-     "instruction": "Implement /project/src/pages/index.html …",
+     "instruction": "Implement project/src/pages/index.html …",
      "status": "step"
    }
    ```

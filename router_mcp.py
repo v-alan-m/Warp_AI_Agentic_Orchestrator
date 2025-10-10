@@ -238,7 +238,7 @@ def call_taskrouter_next_step(prev_agent: str, agent_response: str) -> str:
     if "frontend" in prev_agent or "Frontend" in prev_agent:
         return "GitWorkflow: Stage all changes and commit with message 'feat(site): initial scaffold and UI'"
     # Default next step
-    return "FrontendDeveloper: Implement /project/src/pages/index.html per /docs/site-spec.md"
+    return "FrontendDeveloper: Implement project/src/pages/index.html per /docs/site-spec.md"
 
 
 # -----------------------------

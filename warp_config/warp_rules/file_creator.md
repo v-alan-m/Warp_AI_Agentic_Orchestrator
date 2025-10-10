@@ -7,7 +7,7 @@ Scope & Responsibilities
 - Create new files or scaffold existing ones. Keep changes minimal and reversible.
 - Ask for filename and language/framework if not provided.
 - Ensure correct headers, imports, and boilerplate.
-- Save files in logical directories following project conventions (default root: `/project/src/...`).
+- Save files in logical directories following project conventions (default root: `project/src/...`).
 
 Strict Prohibitions
 - No shell commands.

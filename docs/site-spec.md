@@ -1,15 +1,15 @@
 # Software Consultancy Website — Spec (v1)
 
 ## Pages & Paths
-- Home: `/src/pages/index.html`
-- About: `/src/pages/about.html`
+- Home: `project/src/pages/index.html`
+- About: `project/src/pages/about.html`
 - Services:
-  - Frontend: `/src/pages/services/frontend.html`
-  - Backend: `/src/pages/services/backend.html`
-  - Robotics: `/src/pages/services/robotics.html`
+  - Frontend: `project/src/pages/services/frontend.html`
+  - Backend: `project/src//pages/services/backend.html`
+  - Robotics: `project/src/pages/services/robotics.html`
 
 ## Global Navigation
-- Header: logo/title (links to `/src/pages/index.html`), nav links (Home, Services, About).
+- Header: logo/title (links to `project/src//pages/index.html`), nav links (Home, Services, About).
 - “Services” in nav links to the **home** anchor `/#disciplines`.
 - Footer: company info + link to `/#contact`.
 
@@ -17,9 +17,9 @@
 - **Hero**: headline, short subcopy, primary CTA button.
 - **Skip link** at top: `href="#main"`.
 - **Disciplines**: a `<section id="disciplines">` with 3 cards:
-  - Frontend → `/src/pages/services/frontend.html`
-  - Backend → `/src/pages/services/backend.html`
-  - Robotics → `/src/pages/services/robotics.html`
+  - Frontend → `project/src/pages/services/frontend.html`
+  - Backend → `project/src/pages/services/backend.html`
+  - Robotics → `project/src/pages/services/robotics.html`
 - **Contact**: `<section id="contact">` with a simple form (name, email, message).
 - Main landmark: `<main id="main">…</main>`.
 
@@ -35,8 +35,8 @@
 - CTA linking to `/#contact`.
 
 ## Assets
-- CSS: `/src/assets/styles/main.css` (mobile-first, responsive).
-- JS: `/src/assets/scripts/main.js`
+- CSS: `project/src/assets/styles/main.css` (mobile-first, responsive).
+- JS: `project/src/assets/scripts/main.js`
   - Smooth-scroll internal anchors.
   - Required field guard for `#contact` form.
   - Simple mobile menu toggle.

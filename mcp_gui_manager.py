@@ -351,42 +351,116 @@ HTML = r"""
   <meta charset="utf-8"/>
   <title>Warp Orchestrator — GUI</title>
   <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 24px; color: #111; }
-    h1 { margin-bottom: 8px; }
-    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    textarea, input[type=text], select { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, monospace; }
-    textarea { min-height: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
-    input[type=text], select { padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
-    .checkrow { display:flex; gap:16px; align-items:center; flex-wrap: wrap; }
-    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; background: #fafafa; margin-bottom: 16px; }
-    .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; cursor: pointer; }
-    .btn.secondary { background: white; color: #111; }
-    .ok { color: #058; }
-    .err { color: #b00; white-space: pre-wrap; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, monospace; white-space: pre; background: #fff; border: 1px solid #ddd; padding: 8px; border-radius: 8px; }
-    .small { font-size: 12px; color: #555; }
-    .grid2 { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
-    .grid3 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .grid2b { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    .bold { font-weight: 700; }
-    .badge { display:inline-block; background:#eef; color:#114; padding:2px 6px; border-radius:6px; border:1px solid #aac; margin-left:6px; }
-    .mcp-pill { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #ccc; border-radius:8px; padding:4px 8px; margin:4px 8px 0 0; }
-    .mcp-pill label { font-weight:700; }
-    <style>    
-    .form-block { margin-bottom: 10px; }
-    /* Horizontal flow + wrap for MCP pills */
-    .mcp-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;        /* row gap, column gap */
-    align-items: flex-start;
-    margin-top: 6px;
+    :root {
+      --bg: #ffffff;
+      --fg: #0b1220;
+      --muted: #5b677a;
+      --card: #f7f9fc;
+      --border: #e5e9f2;
+      --accent: #3ccfcf;
+      --accent-fg: #0b1220;
+      --input: #ffffff;
+      --code-bg: #f3f4f6;
     }
-    /* Optional: tighten pill spacing a bit */
-    .mcp-pill { margin: 2px 0 0 0; }
-    .mcp-label { display:block; margin:12px 0 8px; }
-    /* One-column variant for the two-card section */
+    body[data-theme="dark"] {
+      --bg: #0b1220;
+      --fg: #e5eefc;
+      --muted: #9fb3c8;
+      --card: #111a2b;
+      --border: #1c2a44;
+      --accent: #1aa8a8;
+      --accent-fg: #0b1220;
+      --input: #0d1526;
+      --code-bg: #0f1a2e;
+    }
+
+    /* Base layout */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      background: var(--bg);
+      color: var(--fg);
+      font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1, h2, h3 { margin: 0 0 12px; }
+    p { margin: 0 0 10px; color: var(--muted); }
+
+    /* Cards and rows */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
     .row2.single { grid-template-columns: 1fr; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    /* Inputs */
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      background: var(--input);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      outline: none;
+    }
+    textarea { min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+
+    /* Buttons */
+    .btn {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn.secondary {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Code blocks */
+    pre, code {
+      background: var(--code-bg);
+      color: var(--fg);
+      border-radius: 8px;
+    }
+    pre { padding: 10px; overflow: auto; }
+
+    /* Labels */
+    .bold { font-weight: 700; color: var(--fg); }
+    .mcp-label { display: block; margin: 12px 0 8px; }
+    .mcp-row { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+
+    /* Live file viewers */
+    .livebox {
+      width: 100%; min-height: 220px; white-space: pre; overflow: auto;
+      background: var(--code-bg); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    /* Dark-mode toggle button (top-right) */
+    .theme-toggle {
+      position: fixed; top: 12px; right: 12px; z-index: 1000;
+      background: var(--card); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 8px 12px; font-weight: 700; cursor: pointer;
+    }
+
+    @media (max-width: 980px) {
+      .row2 { grid-template-columns: 1fr; }
+    }
   </style>
   <script>
     function copyById(id) {
@@ -624,9 +698,35 @@ HTML = r"""
       // seed derived notes
       updateDerivedNotes();
     });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const KEY  = 'mcp_gui_theme';
+      const btn  = document.getElementById('themeToggle');
+      const root = document.body;
+    
+      if (!btn) return; // safety
+    
+      function apply(theme) {
+        root.setAttribute('data-theme', theme);
+        btn.textContent = (theme === 'dark') ? '☀️ Light' : '🌙 Dark';
+      }
+    
+      // Prefer saved theme; fall back to system setting
+      const saved = localStorage.getItem(KEY)
+          || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    
+      apply(saved);
+    
+      btn.addEventListener('click', () => {
+        const next = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+        localStorage.setItem(KEY, next);
+        apply(next);
+      });
+    });
   </script>
 </head>
 <body>
+  <button id="themeToggle" class="theme-toggle" title="Toggle theme">🌙 Dark</button>
   <h1>Warp Orchestrator — GUI</h1>
   <p class="small">
     Root: {{root}}<br/>

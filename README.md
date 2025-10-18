@@ -208,14 +208,20 @@ rules loaded (agent=<Role> | rule=<Rule Title>)
 
 ## ▶️ Example Workflow
 
-### 0) Launch Router MCP
+### 1) Launch Router MCP
 ```bash
 ./orchestrator.sh (macos/Linux)
 ./orchestrator.ps1 (Windows)
 # Tails /docs/build-summary.md and /docs/router_log.jsonl
 ```
 
-### 1) Kickoff (TaskRouter chat)
+### 2) Use Warp to create a WARP.md based on your custom site-spec.md file
+- Within Warp chat using agent mode:
+```text
+Create one warp.md for this project (project folder root.) Linking where possible to the site-spec.md file in docs/, create this WARP.md file.
+```
+
+### 3) Kickoff (TaskRouter chat)
 Paste this single message:
 ```
 workflow_id: site-scaffold-001
@@ -236,14 +242,14 @@ DONE
 **Expected visible reply (TaskRouter):**  
 `Kicked off workflow (id: site-scaffold-001). I’ll summarize when done.`
 
-### 2) Behind the scenes
+### 3) Behind the scenes
 - Router transforms each routing line into a guarded instruction:
   - Adds **SubAgent prefix**
   - Applies the correct **Rule title**
   - Requires the **rules-loaded** acknowledgment
 - Router loops with TaskRouter until `DONE` (or max steps cap).
 
-### 3) Logs & Final Output
+### 4) Logs & Final Output
 - `/docs/build-summary.md` — human timeline (steps + final block)  
 - `/docs/router_log.jsonl` — structured event log  
 - `/docs/CHANGELOG.md` — one entry per completed run  

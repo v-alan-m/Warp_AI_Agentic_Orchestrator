@@ -29,7 +29,7 @@ export ROUTER_PORT="${ROUTER_PORT:-8085}"
 
 # Behavior toggles (global)
 export ROUTER_FORCE_AUTORUN="${ROUTER_FORCE_AUTORUN:-true}"         # false = manual
-export ROUTER_ECHO_INTERMEDIATE="${ROUTER_ECHO_INTERMEDIATE:-true}" # include step lines
+export ROUTER_ECHO_FINAL="${ROUTER_ECHO_FINAL:-true}" # include step lines
 export ROUTER_STEPWISE_ECHO="${ROUTER_STEPWISE_ECHO:-true}"         # auto-run but return each step
 
 # --- Resolve Python interpreter (prefer repo venv) ---
@@ -49,7 +49,7 @@ echo "MAX_STEPS    : $ROUTER_MAX_STEPS"
 echo "RULE_ACK     : $ROUTER_ENFORCE_RULE_ACK"
 echo "ROUTER_PORT  : $ROUTER_PORT"
 echo "AUTO_RUN     : $ROUTER_FORCE_AUTORUN"
-echo "ECHO_STEPS   : $ROUTER_ECHO_INTERMEDIATE"
+echo "ECHO_STEPS   : $ROUTER_ECHO_FINAL"
 echo "STEPWISE     : $ROUTER_STEPWISE_ECHO"
 echo "PYTHON       : $PYTHON"
 echo

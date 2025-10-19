@@ -3,6 +3,8 @@
 ## Initial File Structure
 ```yaml
 project/
+├─ WARP.md
+├─ README.md
 ├─ api/
 │  └─ main.py             # FastAPI app, Jinja, static mount, routes
 ├─ templates/
@@ -27,7 +29,6 @@ project/
    ├─ build-summary.md
    ├─ CHANGELOG.md
    └─ router_log.jsonl
-
 ```
 
 
@@ -51,7 +52,7 @@ project/
 - **Disciplines**: a `<section id="disciplines">` with 3 cards:
   - Service_1 → `project/templates/pages/services/service_1.html`
   - Service_2 → `project/templates/pages/services/service_2.html`
-  - Robotics → `project/src/pages/services/robotics.html`
+  - Robotics → `project/templates/pages/services/robotics.html`
 - **Contact**: `<section id="contact">` with a simple form (name, email, message).
 - Main landmark: `<main id="main">…</main>`.
 

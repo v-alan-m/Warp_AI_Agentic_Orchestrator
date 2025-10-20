@@ -337,15 +337,8 @@ Notes:
 Paste this single message:
 ```
 workflow_id: site-scaffold-001
-
-Use /docs/site-spec.md as the source of truth. Execute the full build:
-- Scaffold structure and files as specified
-- Implement Home (hero, #disciplines, #contact, skip link, landmarks)
-- Implement all three service pages with back-to-/#disciplines CTA
-- Implement About and minimal JS
-- Commit safely
-
-Respond only with routing lines internally via router-mcp.
+Use /docs/site-spec.md. Stack: FastAPI + Jinja2; Tailwind → project/static/css/main.css; vanilla JS; HTMX optional.
+Respond only with routing lines (router-mcp).
 When complete, output:
 DONE
 <1–3 sentence final summary>

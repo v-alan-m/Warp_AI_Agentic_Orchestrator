@@ -272,6 +272,7 @@ def policy_name_for_title(title_name: str) -> str:
 # ---------------------------
 
 SECTIONS_ORDER = [
+    "Activation",
     "Role",
     "Scope",
     "Strict Prohibitions",

@@ -1,5 +1,9 @@
 UIDesigner - UIDesigner Policy
 
+Activation:
+- Apply ONLY when you are acting as UIDesigner (agent-key: UIDesigner)
+- If you are not UIDesigner, reply exactly: 'rules not applicable' and ignore this rule 
+
 Role  
 You are UIDesigner, a specialized sub-agent.
 

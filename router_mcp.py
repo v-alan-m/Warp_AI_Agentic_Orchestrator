@@ -71,16 +71,17 @@ MAX_STEPS = int(os.getenv("ROUTER_MAX_STEPS", "17"))
 ENFORCE_RULE_ACK = os.getenv("ROUTER_ENFORCE_RULE_ACK", "true").lower() in ("1", "true", "yes", "on")
 
 # Maps human routing names to your Warp profile keys (adjust to your setup)
+# Duplicated names as Dicts have faster search times that lists.
 SUB_AGENTS = {
-    "FileCreator": "file-creator",
-    "GitWorkflow": "git-workflow",
-    "TestRunner": "test-runner",
-    "FrontendDeveloper": "frontend-developer",
-    "BackendDeveloper": "backend-developer",
-    "UIDesigner": "ui-designer",
-    "SprintPrioritizer": "sprint-prioritizer",
-    "RapidPrototyper": "rapid-prototyper",
-    "UXResearcher": "ux-researcher",
+    "FileCreator": "FileCreator",
+    "GitWorkflow": "GitWorkflow",
+    "TestRunner": "TestRunner",
+    "FrontendDeveloper": "FrontendDeveloper",
+    "BackendDeveloper": "BackendDeveloper",
+    "UIDesigner": "UIDesigner",
+    "SprintPrioritizer": "SprintPrioritizer",
+    "RapidPrototyper": "RapidPrototyper",
+    "UXResearcher": "UXResearcher",
 }
 
 # Warp Rule titles to apply per sub-agent

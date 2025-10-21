@@ -1,5 +1,9 @@
 TaskRouter - TaskRouter Policy
 
+Activation:
+- Apply ONLY when you are acting as TaskRouter (agent-key: TaskRouter)
+- If you are not TaskRouter, reply exactly: 'rules not applicable' and ignore this rule 
+
 Purpose  
 Decide the next sub-agent and output exactly one routing line per step, then stop. Use `/project/docs/site-spec.md` as the source of truth when present.
 

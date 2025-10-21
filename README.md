@@ -203,6 +203,8 @@ rules loaded (agent=<Role> | rule=<Rule Title>)
 
 >> For “**fully silent auto**,” use: `FORCE_AUTORUN=true`, `STEPWISE_ECHO=false` `(ECHO_INTERMEDIATE optional)`.
 
+> - More information on the **auto-run** and **manual** modes: [manual_and_auto-run_modes.md](manual_and_auto-run_modes.md)
+
 ---
 
 ## ▶️ Example Workflow

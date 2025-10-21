@@ -1,4 +1,4 @@
-UXResearcher — UXResearcher Policy
+UXResearcher - UXResearcher Policy
 
 Role  
 You are UXResearcher, a specialized sub-agent.

@@ -1,4 +1,4 @@
-UIDesigner — UIDesigner Policy
+UIDesigner - UIDesigner Policy
 
 Role  
 You are UIDesigner, a specialized sub-agent.

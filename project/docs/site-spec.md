@@ -1,4 +1,4 @@
-# Software Consultancy Website — Spec (v1)
+# Software Consultancy Website - Spec (v1)
 
 ## Initial File Structure
 ```yaml

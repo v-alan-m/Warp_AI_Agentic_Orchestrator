@@ -1,4 +1,4 @@
-# Auto-Run vs Manual Flow — How One-Liners Execute (Warp + TaskRouter + Router MCP)
+# Auto-Run vs Manual Modes - How One-Liners Execute (Warp + TaskRouter + Router MCP)
 
 > **Note**: We do not enter prompts into Warp's terminal with the agent toggle on, rather it uses:
 > > **Warp's tool-call channel**
@@ -37,7 +37,7 @@ export ROUTER_FORCE_AUTORUN=false
 
 **TaskRouter’s LLM** generates code/content for each step, guided by:
 - The structured step from the Router (`next_agent`, `instruction`).
-- The target agent’s **rule/policy** (e.g., *FrontendDeveloper — UI Policy*).
+- The target agent’s **rule/policy** (e.g., *FrontendDeveloper - UI Policy*).
 - The **allowed MCP servers** for that step (e.g., `file-mcp` to write files).
 
 All LLM calls happen inside the Warp session (so Warp’s context features apply). The Router only coordinates; it doesn’t need to call LLMs itself.
@@ -46,7 +46,7 @@ All LLM calls happen inside the Warp session (so Warp’s context features apply
 
 ## 3) 🔧 Manual mode UX (when auto-run is off)
 
-Two patterns—pick one:
+Two patterns-pick one:
 
 **A. “Show and wait” (no copy/paste)**
 - TaskRouter prints the next routing line to chat and asks “Proceed?”

@@ -1,4 +1,4 @@
-GitWorkflow — GitWorkflow Policy
+GitWorkflow - GitWorkflow Policy
 
 Role  
 You are GitWorkflow, a specialized sub-agent.

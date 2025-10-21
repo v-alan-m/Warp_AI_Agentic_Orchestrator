@@ -1,5 +1,5 @@
 # router_mcp.py
-# Warp Router MCP — auto-loop router with Markdown + JSONL persistence,
+# Warp Router MCP - auto-loop router with Markdown + JSONL persistence,
 # workflow_id support, TaskRouter kickoff enforcement, and Warp Rule
 # guardrails (with explicit ack) injected per sub-agent.
 #
@@ -85,15 +85,15 @@ SUB_AGENTS = {
 
 # Warp Rule titles to apply per sub-agent
 RULE_TITLES = {
-    "FileCreator": "FileCreator — FileCreator Policy",
-    "GitWorkflow": "GitWorkflow — GitWorkflow Policy",
-    "TestRunner": "TestRunner — TestRunner Policy",
-    "FrontendDeveloper": "FrontendDeveloper — FrontendDeveloper Policy",
-    "BackendDeveloper": "BackendDeveloper — BackendDeveloper Policy",
-    "UIDesigner": "UIDesigner — UIDesigner Policy",
-    "UXResearcher": "UXResearcher — UXResearcher Policy",
-    "SprintPrioritizer": "SprintPrioritizer — SprintPrioritizer Policy",
-    "RapidPrototyper": "RapidPrototyper — RapidPrototyper Policy",
+    "FileCreator": "FileCreator - FileCreator Policy",
+    "GitWorkflow": "GitWorkflow - GitWorkflow Policy",
+    "TestRunner": "TestRunner - TestRunner Policy",
+    "FrontendDeveloper": "FrontendDeveloper - FrontendDeveloper Policy",
+    "BackendDeveloper": "BackendDeveloper - BackendDeveloper Policy",
+    "UIDesigner": "UIDesigner - UIDesigner Policy",
+    "UXResearcher": "UXResearcher - UXResearcher Policy",
+    "SprintPrioritizer": "SprintPrioritizer - SprintPrioritizer Policy",
+    "RapidPrototyper": "RapidPrototyper - RapidPrototyper Policy",
 }
 
 ACK_PATTERN = r'^rules loaded \(agent=(?P<agent>[^|]+)\s*\|\s*rule=(?P<rule>.+)\)$'
@@ -149,8 +149,8 @@ def md_step_line(workflow_id: str, step: int, agent: str, instruction: str) -> s
 
 
 def finalize_markdown(workflow_id: str, summary: str) -> None:
-    append_text(BUILD_SUMMARY_MD, f"\n### {ts()} — Final Summary ({workflow_id})\n{summary}\n")
-    append_text(CHANGELOG_MD, f"## {ts()} — Workflow {workflow_id} Completed\n{summary}\n")
+    append_text(BUILD_SUMMARY_MD, f"\n### {ts()} - Final Summary ({workflow_id})\n{summary}\n")
+    append_text(CHANGELOG_MD, f"## {ts()} - Workflow {workflow_id} Completed\n{summary}\n")
 
 
 def ensure_workflow_id(req: RouteRequest) -> str:

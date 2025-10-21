@@ -16,7 +16,7 @@
 #     * Title, Model dropdown
 #     * Bold checkboxes for permissions (Apply Code Diffs, Read Files)
 #     * Bold dynamic checklist of MCP servers loaded from warp-mcp-config.yaml
-#     * Notes auto-fills to: Rule "<TitleName> — <PolicyName>"
+#     * Notes auto-fills to: Rule "<TitleName> - <PolicyName>"
 #     * Preview renders with two-space indent and '- name:' to match profiles list style
 #
 # Run:
@@ -187,7 +187,7 @@ def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> Rout
     """
     Insert into:
       SUB_AGENTS:   "Title": "kebab-title",
-      RULE_TITLES:  "Title": "Title — Policy",
+      RULE_TITLES:  "Title": "Title - Policy",
     only if missing.
     """
     sub_agents_pat = r"(SUB_AGENTS\s*=\s*\{[^}]*\})"
@@ -292,7 +292,7 @@ SECTIONS_ORDER = [
 def ai_generate_rule(title_name: str, user_notes: str, prior_rules_text: str) -> str:
     """
     Returns a plain-text rule starting with:
-      "<TitleName> — <PolicyName>"
+      "<TitleName> - <PolicyName>"
     followed by ordered sections in SECTIONS_ORDER.
     Requires OpenAI + OPENAI_API_KEY; no local fallback.
     """
@@ -305,7 +305,7 @@ def ai_generate_rule(title_name: str, user_notes: str, prior_rules_text: str) ->
     sys_msg = (
             "You draft operational rules for Warp agent profiles. "
             "Output plain text (no Markdown). Start with a single title line: "
-            f"\"{title_name} — {policy_name}\" then include the following sections in EXACT order, "
+            f"\"{title_name} - {policy_name}\" then include the following sections in EXACT order, "
             "each as a header line followed by succinct bullet points: "
             + ", ".join(SECTIONS_ORDER) + ". "
                                           "Keep it concise, actionable, least-privilege, and safe."
@@ -313,7 +313,7 @@ def ai_generate_rule(title_name: str, user_notes: str, prior_rules_text: str) ->
 
     user_msg = (
         f"Agent name: {title_name}\n"
-        f"Policy title: {title_name} — {policy_name}\n"
+        f"Policy title: {title_name} - {policy_name}\n"
         f"User notes:\n{user_notes}\n\n"
         "Prior Rules Context (verbatim):\n"
         f"{prior_rules_text}\n"
@@ -331,7 +331,7 @@ def ai_generate_rule(title_name: str, user_notes: str, prior_rules_text: str) ->
         temperature=0.3,
     )
     text = resp.choices[0].message.content.strip()
-    titled = f"{title_name} — {policy_name}"
+    titled = f"{title_name} - {policy_name}"
     if not text.splitlines():
         raise RuntimeError("Model returned empty text")
     first = text.splitlines()[0].strip()
@@ -349,7 +349,7 @@ HTML = r"""
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>Warp Orchestrator — GUI</title>
+  <title>Warp Orchestrator - GUI</title>
   <style>
     :root {
       --bg: #ffffff;
@@ -562,12 +562,12 @@ HTML = r"""
       }
     }
 
-    // --- Derived "notes" content: Rule "<Title — Policy>" ---
+    // --- Derived "notes" content: Rule "<Title - Policy>" ---
     function updateDerivedNotes() {
       const name = document.getElementById('agent_name').value.trim() || "NewAgent";
       fetch('/rule_title_for_name?name=' + encodeURIComponent(name))
         .then(r => r.json()).then(j => {
-          const ruleTitle = j.rule_title || (name + " — Policy");
+          const ruleTitle = j.rule_title || (name + " - Policy");
           document.getElementById('notes').value = 'Rule "' + ruleTitle + '"';
         });
     }
@@ -727,7 +727,7 @@ HTML = r"""
 </head>
 <body>
   <button id="themeToggle" class="theme-toggle" title="Toggle theme">🌙 Dark</button>
-  <h1>Warp Orchestrator — GUI</h1>
+  <h1>Warp Orchestrator - GUI</h1>
   <p class="small">
     Root: {{root}}<br/>
     Rules dir: <span id="active_rules_dir">{{rules_dir}}</span>
@@ -754,7 +754,7 @@ HTML = r"""
     <div class="grid2">
       <label>Title (Agent Name, e.g., FileCreator)</label>
       <input type="text" id="agent_name" oninput="toKebab()" placeholder="FileCreator"/>
-      <span id="name_preview" class="mono small">agent-name: —</span>
+      <span id="name_preview" class="mono small">agent-name: -</span>
     </div>
   </div>
 
@@ -782,7 +782,7 @@ HTML = r"""
 
       <div style="margin-top:12px;">
         <label>Notes (auto)</label>
-        <input type="text" id="notes" readonly value='Rule "NewAgent — Policy"' style="margin-top:4px;"/>
+        <input type="text" id="notes" readonly value='Rule "NewAgent - Policy"' style="margin-top:4px;"/>
       </div>
 
       <button class="btn" style="margin-top:12px;" onclick="addProfile()">Add Profile (Preview + Save)</button>
@@ -794,7 +794,7 @@ HTML = r"""
     </div>
 
     <div class="card">
-      <h3>3) Create/Refine Rule (plain text; starts with “Title — Policy”)
+      <h3>3) Create/Refine Rule (plain text; starts with “Title - Policy”)
         <span id="rules_loaded" class="small" style="margin-left:8px;"></span>
       </h3>
       <div class="grid2" style="margin-bottom:8px;">
@@ -807,7 +807,7 @@ HTML = r"""
       <button id="btn_gen" class="btn secondary" onclick="genRule()" style="margin: 12px 0 0px 0;">AI: Generate/Refine Rule</button>
       <p id="rule_result" class="small"></p>
       <textarea id="rule_text" placeholder="Final rule text (plain, no markdown). Paste to Warp → Rules."></textarea>
-      <p class="small">First line example: <code>UXResearcher — Research Artifacts Policy</code></p>
+      <p class="small">First line example: <code>UXResearcher - Research Artifacts Policy</code></p>
     </div>
   </div>
 
@@ -950,7 +950,7 @@ def api_to_kebab():
 def api_rule_title_for_name():
     name = request.args.get("name", "").strip() or "NewAgent"
     title = to_title(name)
-    rule_title = f"{title} — {policy_name_for_title(title)}"
+    rule_title = f"{title} - {policy_name_for_title(title)}"
     return jsonify({"rule_title": rule_title})
 
 
@@ -1130,7 +1130,7 @@ def api_add_profile():
         allowed_mcp_servers = [s.strip() for s in re.split(r"[,\s]+", raw) if s.strip()] or ["file-mcp"]
 
     # Derive rule title used in notes if empty
-    profile_rule_title = f"{title} — {policy_name_for_title(title)}"
+    profile_rule_title = f"{title} - {policy_name_for_title(title)}"
     notes = notes_in if notes_in else f'Rule "{profile_rule_title}"'
 
     # Load existing YAML (list under 'profiles')
@@ -1202,8 +1202,8 @@ def api_patch_router():
     title = to_title(data.get("name", "NewAgent"))
     rule_text = (data.get("rule") or "").strip()
     first = rule_text.splitlines()[0].strip() if rule_text else ""
-    rule_title = first if ("—" in first and first.lower().startswith(
-        title.lower())) else f"{title} — {policy_name_for_title(title)}"
+    rule_title = first if ("-" in first and first.lower().startswith(
+        title.lower())) else f"{title} - {policy_name_for_title(title)}"
     try:
         src = read_text(ROUTER_PY_PATH)
         preview = patch_router_mcp(src, title, rule_title)

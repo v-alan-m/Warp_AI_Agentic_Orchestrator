@@ -131,16 +131,16 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\orchestrator.ps1
 ### 4) ⚖️ Rules (acts like system prompts)
 - Open **Warp Drive → Rules**
 - Create one Rule per profile with the exact titles:
-  - `TaskRouter — TaskRouter Policy`
-  - `FileCreator — FileCreator Policy`
-  - `FrontendDeveloper — FrontendDeveloper Policy`
-  - `BackendDeveloper — BackendDeveloper Policy`
-  - `GitWorkflow — GitWorkflow Policy`
-  - `TestRunner — TestRunner Policy`
-  - `UIDesigner — UIDesigner Policy`
-  - `UXResearcher — UXResearcher Policy`
-  - `SprintPrioritizer — SprintPrioritizer Policy`
-  - `RapidPrototyper — RapidPrototyper Policy`
+  - `TaskRouter - TaskRouter Policy`
+  - `FileCreator - FileCreator Policy`
+  - `FrontendDeveloper - FrontendDeveloper Policy`
+  - `BackendDeveloper - BackendDeveloper Policy`
+  - `GitWorkflow - GitWorkflow Policy`
+  - `TestRunner - TestRunner Policy`
+  - `UIDesigner - UIDesigner Policy`
+  - `UXResearcher - UXResearcher Policy`
+  - `SprintPrioritizer - SprintPrioritizer Policy`
+  - `RapidPrototyper - RapidPrototyper Policy`
 - Paste the text from `warp_config/warp_rules/*.md` for each role.
 
 **Good to know:**  
@@ -289,7 +289,7 @@ ACCEPTANCE
 
 #### 2.2) Use prompt to create a WARP.md file _(not whilst runner the router-mcp)_:
 ```text
-You are writing a concise Warp Project Rules file for THIS repository. Create WARP.md at the project root. Keep it short, high-signal, and reference docs/site-map.md for details. Do not duplicate the whole spec—just rules/guardrails that Warp should auto-apply to agents.
+You are writing a concise Warp Project Rules file for THIS repository. Create WARP.md at the project root. Keep it short, high-signal, and reference docs/site-map.md for details. Do not duplicate the whole spec-just rules/guardrails that Warp should auto-apply to agents.
 
 OUTPUT (Markdown)
 # Project Rules (Warp)
@@ -355,9 +355,9 @@ DONE
 - Router loops with TaskRouter until `DONE` (or max steps cap).
 
 ### 4) Logs & Final Output
-- `/docs/build-summary.md` — human timeline (steps + final block)  
-- `/docs/router_log.jsonl` — structured event log  
-- `/docs/CHANGELOG.md` — one entry per completed run  
+- `/docs/build-summary.md` - human timeline (steps + final block)  
+- `/docs/router_log.jsonl` - structured event log  
+- `/docs/CHANGELOG.md` - one entry per completed run  
 - TaskRouter chat ends with:
 ```
 DONE
@@ -397,12 +397,12 @@ DONE
   - *Profiles*: mirror from `warp_config/warp-agent-config.yaml` (names, model, permissions, allowed servers)  
   - *Rules*: paste from `warp_config/warp_rules/*.md` (one Rule per profile)
 - **Repo**  
-  - `warp_config/warp-mcp-config.yaml` — the JSON you pasted into Warp (kept here for team reference)  
-  - `warp_config/warp-agent-config.yaml` — authoritative profile spec (names, perms, allowed servers)  
-  - `warp_config/warp_rules/*.md` — Rule texts (role “system prompts”)  
-  - `router_mcp.py` — orchestrator with auto-loop + logs  
-  - `docs/*` — logs + spec  
-  - `project/src/*` — generated code
+  - `warp_config/warp-mcp-config.yaml` - the JSON you pasted into Warp (kept here for team reference)  
+  - `warp_config/warp-agent-config.yaml` - authoritative profile spec (names, perms, allowed servers)  
+  - `warp_config/warp_rules/*.md` - Rule texts (role “system prompts”)  
+  - `router_mcp.py` - orchestrator with auto-loop + logs  
+  - `docs/*` - logs + spec  
+  - `project/src/*` - generated code
 > Request/Execution Pipeline (arrow notation):
 >> **Warp tool call → stdio shim (mcp_router_shim.py) → FastAPI (router_mcp.py) → stdio shim ToolResult → Warp → TaskRouter**
 

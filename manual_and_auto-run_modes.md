@@ -3,6 +3,12 @@
 > **Note**: We do not enter prompts into Warp's terminal with the agent toggle on, rather it uses:
 > > **Warp's tool-call channel**
 
+>**Note**: A **chat prompt's response** is **converted** into a **predefined JSON** for the **router MCP** (without having to define the JSON schema in the chat prompt.)
+>> 1) When an agent profile (**TaskRouter**) has access to an **MCP server** (e.g., **router-mcp**).
+<br><br> 
+>> 3) **Warp exposes** that **server’s tool and input schema** to the LLM model (**function-calling style**).
+<br><br>
+>> 4) The **LLM model** then **emits** a **structured tool call** (Warp validates against the schema and forwards to your server.)
 ---
 
 ## 1) 🎚 One switch to rule them all (auto-run on/off)

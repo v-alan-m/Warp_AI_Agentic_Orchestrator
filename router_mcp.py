@@ -49,10 +49,10 @@ def _as_bool(v: str, default: bool) -> bool:
 # Overrides TaskRouter kickoff auto_loop when from_taskrouter=true
 ROUTER_FORCE_AUTORUN = _as_bool(os.getenv("ROUTER_FORCE_AUTORUN"), True)
 # When true, record/return intermediate routing lines (non-blocking; no streaming)
-ROUTER_ECHO_FINAL = _as_bool(os.getenv("ROUTER_ECHO_FINAL"), False)
+ROUTER_ECHO_FINAL = _as_bool(os.getenv("ROUTER_ECHO_FINAL"), True)
 # When true, even in auto-run we return after each step so TaskRouter can echo the line to chat,
 # then immediately call us again (semi-auto with chat echo).
-ROUTER_STEPWISE_ECHO = _as_bool(os.getenv("ROUTER_STEPWISE_ECHO"), False)
+ROUTER_STEPWISE_ECHO = _as_bool(os.getenv("ROUTER_STEPWISE_ECHO"), True)
 
 LOG_DIR = os.getenv("ROUTER_LOG_DIR", os.path.join(os.path.dirname(__file__), "docs"))
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -67,7 +67,7 @@ for f in (BUILD_SUMMARY_MD, CHANGELOG_MD, ROUTER_LOG_JSONL):
         with open(f, "w", encoding="utf-8") as _fh:
             _fh.write("")
 
-MAX_STEPS = int(os.getenv("ROUTER_MAX_STEPS", "10"))
+MAX_STEPS = int(os.getenv("ROUTER_MAX_STEPS", "17"))
 ENFORCE_RULE_ACK = os.getenv("ROUTER_ENFORCE_RULE_ACK", "true").lower() in ("1", "true", "yes", "on")
 
 # Maps human routing names to your Warp profile keys (adjust to your setup)
@@ -371,16 +371,16 @@ def route_task(request: RouteRequest):
         # then TaskRouter should immediately call us again with same workflow_id until done.
         if request.auto_loop and ROUTER_STEPWISE_ECHO:
             msg = "continue"
-        if ROUTER_ECHO_FINAL and echo_transcript:
-            msg = echo_transcript[-1]
-        return RouteResponse(
-            ok=True,
-            workflow_id = workflow_id,
-            step = step,
-            agent = sub_agent,
-            message = msg,
-            done = False
-        )
+            if ROUTER_ECHO_FINAL and echo_transcript:
+                msg = echo_transcript[-1]
+            return RouteResponse(
+                ok=True,
+                workflow_id = workflow_id,
+                step = step,
+                agent = sub_agent,
+                message = msg,
+                done = False
+            )
 
         # Ask TaskRouter for next routing line (INTEGRATE THIS WITH WARP)
         next_task = call_taskrouter_next_step(sub_agent, agent_response).strip()

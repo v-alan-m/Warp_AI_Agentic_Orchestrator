@@ -9,6 +9,7 @@
 >> 3) **Warp exposes** that **server’s tool and input schema** to the LLM model (**function-calling style**).
 <br><br>
 >> 4) The **LLM model** then **emits** a **structured tool call** (Warp validates against the schema and forwards to your server.)
+>> - [**TaskRouter policy**](warp_config/warp_rules/TaskRouter.md) **doesn’t** have to **explain JSON** - the **schema** is **advertised by the MCP.**
 ---
 
 ## 1) 🎚 One switch to rule them all (auto-run on/off)

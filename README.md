@@ -1,4 +1,4 @@
-# 🚀 Warp AI Agentic Orchestrator — TaskRouter + Router MCP (Auto-Loop, Logs, VSCode-Friendly)
+# 🚀 WARP Multi-Step Prompt Orchestration: Agent + MCP + Task
 
 ## 🧭 Overview
 This repo wires a **TaskRouter** profile in Warp to a **Router MCP** (`router_mcp.py`) that:

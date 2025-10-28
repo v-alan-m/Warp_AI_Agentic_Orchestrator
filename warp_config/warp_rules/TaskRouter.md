@@ -17,7 +17,8 @@ Request Format (sent TO router-mcp):
 {
   "step_number": <integer>,
   "total_steps": <integer>,
-  "completed_agent": "<agent_name>",
+  "completed_agent_role": "<agent_role_name>",
+  "completed_policy": "<policy_name>",
   "completed_task": "<task_description>",
   "files_created": [<list_of_file_paths>],
   "files_modified": [<list_of_file_paths>],
@@ -29,7 +30,8 @@ Response Format (received FROM router-mcp):
   "status": "continue|complete",
   "next_step_number": <integer>,
   "total_steps": <integer>,
-  "agent": "<agent_name>",
+  "agent_role": "<agent_role_name>",
+  "policy": "<policy_name>",
   "instruction": "<task_for_agent>",
   "context": "<optional_additional_context>"
 }
@@ -41,7 +43,8 @@ When status === "complete" (received FROM router-mcp):
   "execution_log": [
     {
       "step": <integer>,
-      "agent": "<agent_name>",
+      "agent_role": "<agent_role_name>",
+      "policy": "<policy_name>",
       "instruction": "<task_description>",
       "status": "completed"
     }
@@ -50,7 +53,7 @@ When status === "complete" (received FROM router-mcp):
     "total_steps_completed": <integer>,
     "files_created": <integer>,
     "files_modified": <integer>,
-    "agents_used": [<list_of_agent_names>]
+    "agents_used": [<list_of_agent_role_names>]
   }
 }
 
@@ -68,5 +71,5 @@ Minimality & Preferences
 Step Output Format
 Process these tasks in sequence:
 
-{next_step_number}. As {agent}: {instruction}
-{next_step_number + 1}. As TaskRouter: "All the steps for {agent} are DONE"
+{next_step_number}. As {agent_role} use the {policy} to {instruction}
+{next_step_number + 1}. As TaskRouter use the TaskRouter Policy: "All the steps for {agent_role} are DONE"

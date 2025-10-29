@@ -1,11 +1,11 @@
-# router_mcp.py
+# taskrouter_server.py
 # Warp Router MCP - auto-loop router with Markdown + JSONL persistence,
 # workflow_id support, TaskRouter kickoff enforcement, and Warp Rule
 # guardrails (with explicit ack) injected per sub-agent.
 #
 # Run:
 #   pip install fastapi uvicorn pydantic
-#   python router_mcp.py
+#   python taskrouter_server.py
 #
 # Env (optional):
 #   ROUTER_LOG_DIR=/abs/path/to/docs      # default: ./docs

@@ -1,6 +1,6 @@
 # mcp_gui_manager.py
 # Local GUI to add MCP servers, AI-generate Rules (no local fallback),
-# add new agent Profiles (with live YAML view), and patch router_mcp.py
+# add new agent Profiles (with live YAML view), and patch taskrouter_server.py
 # with live views of SUB_AGENTS and RULE_TITLES.
 #
 # This version:
@@ -53,7 +53,7 @@ APP.config["JSON_SORT_KEYS"] = False
 ROOT = os.path.abspath(os.path.dirname(__file__))
 MCP_JSON_PATH = os.path.join(ROOT, "warp_config", "warp-mcp-config.yaml")
 AGENTS_YAML_PATH = os.path.join(ROOT, "warp_config", "warp-agent-config.yaml")
-ROUTER_PY_PATH = os.path.join(ROOT, "router_mcp.py")
+ROUTER_PY_PATH = os.path.join(ROOT, "taskrouter_server.py")
 
 # Fixed rules directory (your canonical location)
 RULES_DIR = os.path.join(ROOT, "warp_config", "warp_rules")
@@ -224,8 +224,8 @@ def patch_router_mcp(router_src: str, agent_title: str, rule_title: str) -> Rout
         diff = difflib.unified_diff(
             router_src.splitlines(True),
             updated_src.splitlines(True),
-            fromfile="router_mcp.py (old)",
-            tofile="router_mcp.py (new)",
+            fromfile="taskrouter_server.py (old)",
+            tofile="taskrouter_server.py (new)",
             n=4
         )
         before_after = "".join(diff)
@@ -813,7 +813,7 @@ HTML = r"""
   </div>
 
   <div class="card">
-    <h3>4) Patch router_mcp.py (live blocks)</h3>
+    <h3>4) Patch taskrouter_server.py (live blocks)</h3>
     <button class="btn" onclick="patchRouter()">Patch Router (Preview + Save)</button>
     <p id="router_result" class="small"></p>
     <div class="grid3">
@@ -1210,7 +1210,7 @@ def api_patch_router():
         preview = patch_router_mcp(src, title, rule_title)
         if not (preview.found_sub_agents and preview.found_rule_titles):
             return jsonify({
-                "ok": False, "msg": "Could not find SUB_AGENTS and/or RULE_TITLES in router_mcp.py",
+                "ok": False, "msg": "Could not find SUB_AGENTS and/or RULE_TITLES in taskrouter_server.py",
                 "diff": preview.before_after or ""
             }), 400
         if preview.before_after:
@@ -1220,7 +1220,7 @@ def api_patch_router():
             sub, rtl = extract_subagents_and_ruletitles(patched)
             return jsonify({
                 "ok": True,
-                "msg": f"router_mcp.py patched (SUB_AGENTS + RULE_TITLES) → {ROUTER_PY_PATH}",
+                "msg": f"taskrouter_server.py patched (SUB_AGENTS + RULE_TITLES) → {ROUTER_PY_PATH}",
                 "diff": preview.before_after, "sub_agents": sub, "rule_titles": rtl
             })
         else:

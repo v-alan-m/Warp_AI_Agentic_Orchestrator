@@ -59,7 +59,7 @@ pip install fastapi uvicorn pydantic
 ```
 ### 2) (Optional) Set environment
 ```bash
-export ROUTER_LOG_DIR="$(pwd)/docs"     # default: ./docs next to router_mcp.py
+export ROUTER_LOG_DIR="$(pwd)/docs"     # default: ./docs next to taskrouter_server.py
 export ROUTER_MAX_STEPS=17              # safety cap for auto-loop
 export ROUTER_ENFORCE_RULE_ACK=true     # require 'rules loaded (...)' ack
 export ROUTER_PORT=8085                 # default 8085

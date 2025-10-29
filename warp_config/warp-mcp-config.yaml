@@ -55,7 +55,7 @@
     "router-mcp": {
       "command": ".\\.venv\\Scripts\\python.exe",
       "args": [
-        "mcp_router_shim.py"
+        "taskrouter_mpc.py"
       ],
       "env": {
         "ROUTER_URL": "http://127.0.0.1:8085/route"

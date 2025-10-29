@@ -1,12 +1,4 @@
 profiles:
-  - name: TaskRouter
-    model: claude-sonnet-latest
-    permissions:
-      apply_code_files: false
-      read_files: false
-    allowed_mcp_servers: [router-mcp]
-    notes: Rule "TaskRouter - TaskRouter Policy"
-
   - name: FileCreator
     model: claude-sonnet-latest
     permissions:

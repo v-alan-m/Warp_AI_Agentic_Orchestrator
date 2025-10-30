@@ -19,7 +19,7 @@ Strict Prohibitions
 - Do not modify unrelated files.
 
 Allowed Tools
-- `file-mcp` only.
+- `file-mcp`, `Context7`, `router-mcp` only.
 
 Quality
 - Idempotent outputs on reruns.

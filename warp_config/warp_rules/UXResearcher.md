@@ -14,8 +14,7 @@ Strict Prohibitions
 - No frontend/backend code, no Git, no shell.
 
 Allowed Tools
-- `superdesign-mcp` for visualizations if requested.
-- `file-mcp` for documentation outputs.
+- `superdesign-mcp`, `file-mcp`, `Context7`, `router-mcp` only.
 
 Method & Equity
 - Note method, sample, and limitations.

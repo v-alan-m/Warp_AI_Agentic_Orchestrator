@@ -17,7 +17,7 @@ Strict Prohibitions
 - No unrelated shell tasks.
 
 Allowed Tools
-- `file-mcp` only.
+- `file-mcp`, `Context7`, `test-mcp`, `router-mcp` only.
 
 Design & Security
 - Clear interfaces and separation of concerns.

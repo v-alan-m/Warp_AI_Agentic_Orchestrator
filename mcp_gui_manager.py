@@ -483,6 +483,78 @@ HTML = r"""
         err.className = "err small";
       }
     }
+    function parseArgsField(s) {
+      const t = (s || "").trim();
+      if (!t) return [];
+      // try JSON array first
+      try {
+        const val = JSON.parse(t);
+        if (Array.isArray(val)) return val.map(String);
+      } catch (_) {}
+      // fallback: comma/whitespace separated
+      return t.split(/,/).map(v => v.trim()).filter(Boolean);
+    }
+    
+    function parseEnvField(s) {
+      const t = (s || "").trim();
+      if (!t) return {};
+      // try JSON object first
+      try {
+        const val = JSON.parse(t);
+        if (val && typeof val === "object" && !Array.isArray(val)) return val;
+      } catch (_) {}
+      // fallback: KEY=VALUE pairs separated by commas or newlines
+      const out = {};
+      t.split(/\r?\n|,/).forEach(line => {
+        const raw = line.trim();
+        if (!raw) return;
+        const idx = raw.indexOf("=");
+        if (idx > 0) {
+          const k = raw.slice(0, idx).trim();
+          const v = raw.slice(idx + 1).trim();
+          if (k) out[k] = v;
+        }
+      });
+      return out;
+    }
+    
+    function buildMcpJsonFromFields() {
+      const name  = (document.getElementById('mcp_name').value || '').trim();
+      const cmd   = (document.getElementById('mcp_command').value || '').trim();
+      const args  = parseArgsField(document.getElementById('mcp_args').value);
+      const env   = parseEnvField(document.getElementById('mcp_env').value);
+      const work  = (document.getElementById('mcp_workdir').value || 'current_working_directory').trim();
+    
+      if (!name) throw new Error("Server name is required.");
+      if (!cmd)  throw new Error("Command is required.");
+    
+      const payload = {};
+      payload[name] = {
+        command: cmd,
+        args: args,
+        env: env,
+        working_directory: work
+      };
+      return JSON.stringify(payload, null, 2);
+    }
+    
+    function rebuildMcpJsonPreview() {
+      const out = document.getElementById('mcp_json');
+      const err = document.getElementById('json_err');
+      try {
+        const text = buildMcpJsonFromFields();
+        out.value = text;
+        // validate
+        JSON.parse(text);
+        err.textContent = "OK: Valid JSON";
+        err.className = "ok small";
+      } catch (e) {
+        out.value = "";
+        err.textContent = e.message || "Invalid input";
+        err.className = "err small";
+      }
+    }
+
     function toKebab() {
       const name = document.getElementById('agent_name').value;
       fetch('/to_kebab?name=' + encodeURIComponent(name))
@@ -595,18 +667,23 @@ HTML = r"""
     }
 
     async function saveMcp() {
-      const jsonText = document.getElementById('mcp_json').value;
-      const r = await fetch('/save_mcp', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ mcp_json: jsonText })
-      });
-      const j = await r.json();
       const out = document.getElementById('mcp_result');
-      out.className = j.ok ? 'ok small' : 'err small';
-      out.textContent = j.msg;
-      if (j.ok && j.text) {
-        document.getElementById('mcp_preview').value = j.text;
-        // next poll will also reflect new mtime
+      try {
+        const jsonText = buildMcpJsonFromFields();
+        const r = await fetch('/save_mcp', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ mcp_json: jsonText })
+        });
+        const j = await r.json();
+        out.className = j.ok ? 'ok small' : 'err small';
+        out.textContent = j.msg || (j.ok ? 'Saved' : 'Error');
+        if (j.ok && j.text) {
+          document.getElementById('mcp_preview').value = j.text;
+          // preview box above already shows the single-server payload
+        }
+      } catch (e) {
+        out.className = 'err small';
+        out.textContent = e.message || 'Error';
       }
     }
 
@@ -690,15 +767,28 @@ HTML = r"""
       await refreshRulesMeta();
       await refreshAgentYaml();
       await refreshRouterBlocks();
+      
       // polling loops (1.5s)
       try { pollMcpPreview(); setInterval(pollMcpPreview, 1500); } catch (e) {}
       try { pollAgentYaml(); setInterval(pollAgentYaml, 1500); } catch (e) {}
+      
       // rules select change
       const sel = document.getElementById('rules_select');
       if (sel) sel.addEventListener('change', ()=>loadRuleText(sel.value));
+      
       // seed derived notes
       updateDerivedNotes();
+      
+      // Live-build MCP JSON from fields
+      ['mcp_name','mcp_command','mcp_args','mcp_env','mcp_workdir'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', rebuildMcpJsonPreview);
+      });
+      
+      // first render
+      rebuildMcpJsonPreview();
     });
+
 
     document.addEventListener('DOMContentLoaded', () => {
       const KEY  = 'mcp_gui_theme';
@@ -735,20 +825,41 @@ HTML = r"""
   </p>
 
   <!-- TOP: MCP servers -->
-  <div class="card">
-    <h3>1) Add MCP Server JSON</h3>
-    <div class="grid2">
-      <span class="small">Paste JSON below</span>
-      <span></span>
-      <!--<button id="mcp_json_copy_btn" class="btn secondary" onclick="copyById('mcp_json')">Copy</button>-->
+<div class="card">
+  <h3>1) Add MCP Server</h3>
+
+  <div class="row2 single" style="gap:12px; margin-top:8px;">
+    <div>
+      <label class="bold mcp-label">MCP server name</label>
+      <input id="mcp_name" type="text" placeholder="Context7"/>
+
+      <label class="bold mcp-label" style="margin-top:10px;">Command</label>
+      <input id="mcp_command" type="text" placeholder="npx"/>
+
+      <label class="bold mcp-label" style="margin-top:10px;">Args</label>
+      <input id="mcp_args" type="text" placeholder='-y, @upstash/context7-mcp'/>
+
+      <label class="bold mcp-label" style="margin-top:10px;">Env</label>
+      <input id="mcp_env" type="text" placeholder='KEY=VALUE, OTHER=123  (or JSON: {"KEY":"VALUE"})'/>
+
+      <label class="bold mcp-label" style="margin-top:10px;">Working Directory</label>
+      <input id="mcp_workdir" type="text" placeholder="current_working_directory"/>
     </div>
-    <textarea id="mcp_json" oninput="validateJSON()" placeholder='{"file-mcp": { "command":"npx", "args":["-y","@modelcontextprotocol/server-filesystem","current_working_directory"], "env":{}, "working_directory":"current_working_directory" }}'></textarea>
-    <p id="json_err" class="small">Paste JSON to validate…</p>
-    <button class="btn" onclick="saveMcp()">Save MCP → warp-mcp-config.yaml</button>
-    <p id="mcp_result" class="small"></p>
-    <h4 class="small">Current warp-mcp-config.yaml:</h4>
-    <textarea id="mcp_preview" readonly></textarea>
+
+    <div>
+      <span class="small">Payload preview (what will be saved/merged):</span>
+      <textarea id="mcp_json" readonly
+        placeholder='{"Context7":{"command":"npx","args":["-y","@upstash/context7-mcp"],"env":{},"working_directory":"current_working_directory"}}'></textarea>
+      <p id="json_err" class="small">Fill in the fields to build JSON…</p>
+      <button class="btn" onclick="saveMcp()">Save MCP → warp-mcp-config.yaml</button>
+      <p id="mcp_result" class="small"></p>
+    </div>
   </div>
+
+  <h4 class="small" style="margin-top:14px;">Current warp-mcp-config.yaml:</h4>
+  <textarea id="mcp_preview" readonly></textarea>
+</div>
+
 
   <!-- BOTTOM: Agent + Profile + Rule + Router -->
   <div class="card">

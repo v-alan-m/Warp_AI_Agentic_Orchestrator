@@ -1,0 +1,86 @@
+profiles:
+  - name: TaskRouter
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: false
+      read_files: false
+    allowed_mcp_servers: [router-mcp]
+    notes: Rule "TaskRouter — TaskRouter Policy"
+
+  - name: FileCreator
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: true
+      read_files: true
+    allowed_mcp_servers: [file-mcp]
+    notes: Rule "FileCreator — FileCreator Policy".
+
+  - name: FrontendDeveloper
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: true
+      read_files: true
+    allowed_mcp_servers: [file-mcp]
+    notes: Rule "FrontendDeveloper — FrontendDeveloper Policy".
+
+  - name: BackendDeveloper
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: true
+      read_files: true
+    allowed_mcp_servers: [file-mcp]
+    notes: Rule "BackendDeveloper — BackendDeveloper Policy".
+
+  - name: GitWorkflow
+    model: claude-haiku-latest
+    permissions:
+      apply_code_files: false
+      read_files: true
+    allowed_mcp_servers:
+      - git-mcp
+      - github-mcp
+    notes: Rule "GitWorkflow — GitWorkflow Policy".
+
+  - name: TestRunner
+    model: claude-haiku-latest
+    permissions:
+      apply_code_files: false
+      read_files: true
+    allowed_mcp_servers: [test-mcp]
+    notes: Rule "TestRunner — TestRunner Policy".
+
+  - name: UIDesigner
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: true
+      read_files: true
+    allowed_mcp_servers:
+      - superdesign-mcp
+      - file-mcp
+    notes: Rule "UIDesigner — UIDesigner Policy".
+
+  - name: UXResearcher
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: true
+      read_files: true
+    allowed_mcp_servers:
+      - superdesign-mcp
+      - file-mcp
+    notes: Rule "UXResearcher — UXResearcher Policy".
+
+  - name: SprintPrioritizer
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: true
+      read_files: true
+    allowed_mcp_servers: [file-mcp]
+    notes: Rule "SprintPrioritizer — SprintPrioritizer Policy".
+
+  - name: RapidPrototyper
+    model: claude-sonnet-latest
+    permissions:
+      apply_code_files: true
+      read_files: true
+    allowed_mcp_servers: [file-mcp]
+    notes: Rule "RapidPrototyper — RapidPrototyper Policy".

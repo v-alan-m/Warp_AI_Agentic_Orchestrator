@@ -1,0 +1,73 @@
+{
+  "mcpServers": {
+    "file-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "current_working_directory"
+      ],
+      "env": {},
+      "working_directory": "current_working_directory"
+    },
+    "git-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cyanheads/git-mcp-server"
+      ],
+      "env": {
+        "GIT_SSH_COMMAND": "ssh -o StrictHostKeyChecking=no"
+      },
+      "working_directory": "current_working_directory"
+    },
+    "github-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN=<github_personal_access_token>",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {},
+      "working_directory": "current_working_directory"
+    },
+    "test-mcp": {
+      "command": "node",
+      "args": [
+        "your_path_to\\mcp-test-runner\\build\\index.js"
+      ],
+      "env": {
+        "NODE_PATH": "your_path_to\\mcp-test-runner\\node_modules"
+      },
+      "working_directory": "current_working_directory"
+    },
+    "superdesign-mcp": {
+      "command": "node",
+      "args": [
+        "your_path_to\\superdesign-mcp\\dist\\index.js"
+      ],
+      "env": {},
+      "working_directory": "current_working_directory"
+    },
+    "taskrouter-mcp": {
+      "command": "python",
+      "args": [
+        "taskrouter_mcp.py"
+      ],
+      "env": {},
+      "working_directory": "<your_file_directory_to_here>\\taskrouter_mcp"
+    },
+    "Context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {},
+      "working_directory": "current_working_directory"
+    }
+  }
+}

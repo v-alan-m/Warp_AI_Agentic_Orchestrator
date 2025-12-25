@@ -1,0 +1,215 @@
+# ============================================================================
+# PROJECT SPECIFICATION TEMPLATE
+# ============================================================================
+# This file defines your project and the workflow steps for TaskRouter-MCP.
+# Edit this file to match your project requirements, then use Warp to
+# initialize the workflow.
+#
+# USAGE:
+#   As TaskRouter: Read /path/to/project/docs/site-spec.yaml and initialize
+#   a workflow with taskrouter-mcp
+#
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# PROJECT METADATA
+# ----------------------------------------------------------------------------
+project:
+  name: "My Web Application"
+  description: "A full-stack web application with authentication and user management"
+  goal: "Build a production-ready web app with frontend, backend, and database integration"
+  
+  # Project type helps agents understand context
+  type: "web-application"  # Options: web-application, api, mobile-app, library, etc.
+  
+  # Tech stack (optional - helps agents make better decisions)
+  stack:
+    frontend: "React"
+    backend: "Express/Node.js"
+    database: "PostgreSQL"
+    styling: "Tailwind CSS"
+
+# ----------------------------------------------------------------------------
+# WORKFLOW DEFINITION
+# ----------------------------------------------------------------------------
+# Define the sequence of tasks to complete the project.
+# Each step specifies:
+#   - agent: Which agent profile to use (must match Warp agent names)
+#   - task: High-level description of what to accomplish
+#   - details: Specific sub-tasks or requirements (array of strings)
+# ----------------------------------------------------------------------------
+
+workflow:
+  steps:
+    # ========================================================================
+    # STEP 1: Project Structure
+    # ========================================================================
+    - agent: FileCreator
+      task: "Create initial project directory structure"
+      details:
+        - "Create /frontend directory with src/, public/, and components/ subdirectories"
+        - "Create /backend directory with routes/, controllers/, models/, and middleware/ subdirectories"
+        - "Create /docs directory for documentation"
+        - "Create /tests directory with unit/ and integration/ subdirectories"
+        - "Create root-level .gitignore, README.md, and package.json placeholders"
+    
+    # ========================================================================
+    # STEP 2: Backend Foundation
+    # ========================================================================
+    - agent: BackendDeveloper
+      task: "Set up Express.js backend with basic configuration"
+      details:
+        - "Create /backend/server.js as the main entry point"
+        - "Set up Express middleware: cors, body-parser, helmet for security"
+        - "Create /backend/config/database.js for PostgreSQL connection configuration"
+        - "Set up environment variable handling with dotenv"
+        - "Create /backend/routes/index.js to organize route imports"
+        - "Add error handling middleware"
+    
+    # ========================================================================
+    # STEP 3: Authentication API
+    # ========================================================================
+    - agent: BackendDeveloper
+      task: "Implement user authentication system"
+      details:
+        - "Create /backend/models/User.js with email, password, name fields"
+        - "Implement password hashing with bcrypt"
+        - "Create /backend/routes/auth.js with register and login endpoints"
+        - "Implement JWT token generation and validation"
+        - "Create /backend/middleware/auth.js for protected route authentication"
+        - "Add input validation using express-validator"
+    
+    # ========================================================================
+    # STEP 4: Frontend Setup
+    # ========================================================================
+    - agent: FrontendDeveloper
+      task: "Initialize React frontend with routing and state management"
+      details:
+        - "Set up React app in /frontend with Create React App or Vite"
+        - "Configure React Router for navigation (/, /login, /register, /dashboard)"
+        - "Create /frontend/src/components/Layout.js with header, nav, footer"
+        - "Set up Tailwind CSS configuration and base styles"
+        - "Create /frontend/src/utils/api.js for backend API calls"
+        - "Implement authentication context for global auth state"
+    
+    # ========================================================================
+    # STEP 5: Authentication UI
+    # ========================================================================
+    - agent: FrontendDeveloper
+      task: "Build login and registration forms"
+      details:
+        - "Create /frontend/src/components/LoginForm.js with email and password fields"
+        - "Create /frontend/src/components/RegisterForm.js with name, email, password fields"
+        - "Add form validation with visual error messages"
+        - "Implement API integration to call backend auth endpoints"
+        - "Add loading states and error handling"
+        - "Create protected route wrapper for authenticated pages"
+        - "Ensure WCAG AA accessibility compliance (labels, ARIA, focus states)"
+    
+    # ========================================================================
+    # STEP 6: UI Design System
+    # ========================================================================
+    - agent: UIDesigner
+      task: "Create design system and component style guide"
+      details:
+        - "Define color palette (primary, secondary, error, success, neutral)"
+        - "Establish typography scale (headings, body, captions)"
+        - "Define spacing system (4px/8px grid)"
+        - "Create button variants (primary, secondary, outline, ghost)"
+        - "Define input field styles with focus and error states"
+        - "Document component tokens in /design/design-system.md"
+        - "Ensure minimum 4.5:1 contrast ratio for text"
+    
+    # ========================================================================
+    # STEP 7: Testing Setup
+    # ========================================================================
+    - agent: FileCreator
+      task: "Create test file structure and configuration"
+      details:
+        - "Create /tests/backend/auth.test.js for authentication tests"
+        - "Create /tests/frontend/LoginForm.test.js for component tests"
+        - "Add jest.config.js for backend tests"
+        - "Add setupTests.js for React Testing Library"
+        - "Create /tests/README.md with testing guidelines"
+    
+    # ========================================================================
+    # STEP 8: Documentation
+    # ========================================================================
+    - agent: FileCreator
+      task: "Create project documentation"
+      details:
+        - "Create /docs/API.md documenting all backend endpoints"
+        - "Create /docs/SETUP.md with installation and run instructions"
+        - "Create /docs/ARCHITECTURE.md explaining project structure"
+        - "Update root README.md with project overview and quick start"
+        - "Create /docs/CONTRIBUTING.md with development guidelines"
+    
+    # ========================================================================
+    # STEP 9: Git Setup (Optional - only if explicit Git actions needed)
+    # ========================================================================
+    - agent: GitWorkflow
+      task: "Initialize Git repository and create initial commit"
+      details:
+        - "Initialize Git repository with 'git init'"
+        - "Stage all files"
+        - "Create initial commit with message: 'Initial project setup'"
+        - "Create development branch"
+
+# ----------------------------------------------------------------------------
+# ADDITIONAL CONFIGURATION (Optional)
+# ----------------------------------------------------------------------------
+
+# Define dependencies that agents should be aware of
+dependencies:
+  backend:
+    - "express"
+    - "jsonwebtoken"
+    - "bcrypt"
+    - "pg"
+    - "dotenv"
+    - "helmet"
+    - "cors"
+  frontend:
+    - "react"
+    - "react-router-dom"
+    - "axios"
+    - "tailwindcss"
+
+# Environment variables needed (for documentation purposes)
+environment:
+  - "DATABASE_URL - PostgreSQL connection string"
+  - "JWT_SECRET - Secret key for JWT token signing"
+  - "PORT - Backend server port (default: 3000)"
+  - "NODE_ENV - Environment mode (development/production)"
+
+# Success criteria (optional - helps with validation)
+success_criteria:
+  - "User can register with email and password"
+  - "User can login and receive JWT token"
+  - "Protected routes require valid authentication"
+  - "Frontend is responsive at 360px, 768px, 1280px widths"
+  - "All forms meet WCAG AA accessibility standards"
+  - "API returns appropriate error messages"
+
+# ============================================================================
+# NOTES FOR CUSTOMIZATION
+# ============================================================================
+#
+# 1. AGENT NAMES: Must exactly match your Warp agent profile names
+#    Available: FileCreator, BackendDeveloper, FrontendDeveloper, UIDesigner,
+#               UXResearcher, TestRunner, GitWorkflow, RapidPrototyper,
+#               SprintPrioritizer
+#
+# 2. TASK DESCRIPTIONS: Be specific and actionable
+#    Good: "Create /backend/routes/auth.js with register and login endpoints"
+#    Bad: "Set up authentication"
+#
+# 3. DETAILS ARRAY: Break down into concrete sub-tasks
+#    Each detail should be a single, clear action
+#
+# 4. STEP ORDER: Arrange logically (structure → backend → frontend → tests)
+#
+# 5. VALIDATION: Use `python -c "import yaml; yaml.safe_load(open('docs/site-spec.yaml'))"`
+#    to check YAML syntax before initializing workflow
+#
+# ============================================================================

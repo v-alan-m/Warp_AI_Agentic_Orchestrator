@@ -519,4 +519,11 @@ flake8 taskrouter_mcp.py
 
 ## License
 
-Proprietary - For internal use only
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Usage
+
+You are free to use, modify, and distribute the software, but you must retain the original copyright and provide appropriate credit to the author(s). This includes referencing the original project when redistributing or using it publicly, whether as-is or with modifications.
+
+For more details on the MIT License, please check [MIT License](https://opensource.org/licenses/MIT).
+

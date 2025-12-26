@@ -4,7 +4,7 @@ profiles:
     permissions:
       apply_code_files: false
       read_files: false
-    allowed_mcp_servers: [router-mcp]
+    allowed_mcp_servers: [taskrouter-mcp]
     notes: Rule "TaskRouter — TaskRouter Policy"
 
   - name: FileCreator

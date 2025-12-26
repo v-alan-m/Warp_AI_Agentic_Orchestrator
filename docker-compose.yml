@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  router-mcp:
+  taskrouter-mcp:
     build: .
     container_name: taskrouter-mcp
     restart: unless-stopped

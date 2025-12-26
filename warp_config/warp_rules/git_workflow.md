@@ -15,7 +15,7 @@ Strict Prohibitions
 - No file edits (beyond what git inherently needs).
 
 Allowed Tools
-- `git-mcp`, `github-mcp`, `router-mcp` only.
+- `git-mcp`, `github-mcp`, `taskrouter-mcp` only.
 
 Safety
 - Explain the commands before running them.

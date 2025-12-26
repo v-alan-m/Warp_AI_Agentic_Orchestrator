@@ -60,7 +60,7 @@ python taskrouter_mcp.py
 
 Expected output:
 ```
-INFO:__main__:Starting router-mcp server...
+INFO:__main__:Starting taskrouter-mcp server...
 ```
 
 The server is now running and listening for MCP connections via stdio.
@@ -126,7 +126,7 @@ docker run --name taskrouter-mcp -i -t taskrouter-mcp:latest
 
 Expected output:
 ```
-INFO:__main__:Starting router-mcp server...
+INFO:__main__:Starting taskrouter-mcp server...
 ```
 
 **To stop**: Press `Ctrl+C`
@@ -238,7 +238,7 @@ Process these tasks in sequence:
 {
   "type": "all_steps_json",
   "workflow_id": "test-workflow-001",
-  "original_goal": "Test the router-mcp server",
+  "original_goal": "Test the taskrouter-mcp server",
   "total_steps": 2,
   "steps": [
     {
@@ -271,7 +271,7 @@ If you have a registry (Docker Hub, etc.):
 
 ```powershell
 # Tag image
-docker tag router-mcp:latest <your-registry>/router-mcp:latest
+docker tag taskrouter-mcp:latest <your-registry>/router-mcp:latest
 
 # Push
 docker push <your-registry>/router-mcp:latest
@@ -314,10 +314,10 @@ pip install -r requirements.txt
 **Solution**:
 ```powershell
 # Check Dockerfile syntax
-docker build -t router-mcp:test .
+docker build -t taskrouter-mcp:test .
 
 # If still failing, rebuild with no cache
-docker build --no-cache -t router-mcp:latest .
+docker build --no-cache -t taskrouter-mcp:latest .
 ```
 
 ### Problem: "Container exits immediately"
@@ -325,13 +325,13 @@ docker build --no-cache -t router-mcp:latest .
 **Solution**:
 ```powershell
 # Check logs
-docker logs router-mcp
+docker logs taskrouter-mcp
 
 # Run in interactive mode to see error
-docker run -i -t router-mcp:latest
+docker run -i -t taskrouter-mcp:latest
 
 # If Python error, verify mcp module is installed
-docker run -i -t router-mcp:latest python -c "import mcp; print('OK')"
+docker run -i -t taskrouter-mcp:latest python -c "import mcp; print('OK')"
 ```
 
 ### Problem: "Port already in use" (if using networking)
@@ -374,10 +374,10 @@ docker images
 docker ps
 
 # View logs
-docker logs router-mcp
+docker logs taskrouter-mcp
 
 # Remove image
-docker rmi router-mcp:latest
+docker rmi taskrouter-mcp:latest
 
 # Remove all unused images
 docker image prune -a
@@ -407,7 +407,7 @@ docker-compose restart
 ## Next Steps
 
 1. **Integrate with Warp** (Part 3 above)
-2. **Configure agent profiles** to include router-mcp
+2. **Configure agent profiles** to include taskrouter-mcp
 3. **Test with sample workflows**
 4. **Deploy to production** if needed
 

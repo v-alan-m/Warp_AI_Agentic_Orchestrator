@@ -1,4 +1,4 @@
-# Router-MCP Project Summary
+# Taskrouter-MCP Project Summary
 
 ## Overview
 
@@ -117,7 +117,7 @@ python router_mcp.py
 ```powershell
 # 1. Build image
 cd <your_directory_location_to_here>\router_mcp
-docker build -t router-mcp:latest .
+docker build -t taskrouter-mcp:latest .
 
 # 2. Start with Docker Compose
 docker-compose up -d
@@ -130,10 +130,10 @@ docker-compose logs -f
 
 ## Integration with Warp
 
-1. Add router-mcp as MCP server in Warp Settings
-2. Add router-mcp to agent profile MCP allowlist
-3. Use TaskRouter agent role to call router-mcp
-4. TaskRouter Policy enforces that only TaskRouter can access router-mcp
+1. Add taskrouter-mcp as MCP server in Warp Settings
+2. Add taskrouter-mcp to agent profile MCP allowlist
+3. Use TaskRouter agent role to call taskrouter-mcp
+4. TaskRouter Policy enforces that only TaskRouter can access taskrouter-mcp
 
 ## Workflow State
 

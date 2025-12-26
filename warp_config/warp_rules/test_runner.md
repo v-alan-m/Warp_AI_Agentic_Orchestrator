@@ -16,7 +16,7 @@ Strict Prohibitions
 - No code edits, no Git, no unrelated shell commands.
 
 Allowed Tools
-- `test-mcp`, `Context7`, `router-mcp` only.
+- `test-mcp`, `Context7`, `taskrouter-mcp` only.
 
 Output
 - Clear summary of results and failing test files/lines.

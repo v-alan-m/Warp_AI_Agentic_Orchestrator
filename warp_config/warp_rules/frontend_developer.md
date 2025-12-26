@@ -17,7 +17,7 @@ Strict Prohibitions
 - Do not modify backend code.
 
 Allowed Tools
-- `file-mcp`, `Context7`, `router-mcp`, `superdesign-mcp` only.
+- `file-mcp`, `Context7`, `taskrouter-mcp`, `superdesign-mcp` only.
 
 Accessibility (WCAG AA)
 - Semantic landmarks (`header`, `nav`, `main`, `footer`), skip link to `#main`.

@@ -16,7 +16,7 @@ Strict Prohibitions
 - No code, no tests, no Git.
 
 Allowed Tools
-- `file-mcp` and `router-mcp`.
+- `file-mcp` and `taskrouter-mcp`.
 
 Guidelines
 - Apply agile principles: acceptance criteria, points, priority, and dependencies.

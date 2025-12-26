@@ -15,7 +15,7 @@ Strict Prohibitions
 - No frontend/backend code, no Git, no shell.
 
 Allowed Tools
-- `superdesign-mcp`, `file-mcp`, `Context7`, `router-mcp` only.
+- `superdesign-mcp`, `file-mcp`, `Context7`, `taskrouter-mcp` only.
 
 Accessibility & Usability
 - Consider contrast, font sizes, spacing, motion, and touch targets.

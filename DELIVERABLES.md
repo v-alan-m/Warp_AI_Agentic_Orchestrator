@@ -172,7 +172,7 @@ mcp==1.0.0
   - all_steps_json (initialization)
   - single_done_step_json (step completion)
   - Response formats (continue and complete)
-- Router-MCP logic requirements
+- Taskrouter-MCP logic requirements
 - Architectural benefits
 - Security & compliance notes
 - Example complete workflow
@@ -420,7 +420,7 @@ After setup, you'll have:
    - Handling workflow orchestration
 
 2. **Integrated with Warp**
-   - TaskRouter can call router-mcp
+   - TaskRouter can call taskrouter-mcp
    - All agent roles have access
    - Automatic step routing
 

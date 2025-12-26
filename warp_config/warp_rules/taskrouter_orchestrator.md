@@ -11,11 +11,11 @@ Available Sub-Agents
 All agent profiles
 
 Allowed Tools
-- `router-mcp` only.
+- `taskrouter-mcp` only.
 
 Router-MCP API Contract
 
-Request Format (sent TO router-mcp):
+Request Format (sent TO taskrouter-mcp):
 {
   "step_number": <integer>,
   "total_steps": <integer>,
@@ -26,7 +26,7 @@ Request Format (sent TO router-mcp):
   "original_goal": "<overall_project_goal>"
 }
 
-Response Format (received FROM router-mcp):
+Response Format (received FROM taskrouter-mcp):
 {
   "status": "continue|complete",
   "next_step_number": <integer>,
@@ -36,7 +36,7 @@ Response Format (received FROM router-mcp):
   "context": "<optional_additional_context>"
 }
 
-When status === "complete" (received FROM router-mcp):
+When status === "complete" (received FROM taskrouter-mcp):
 {
   "status": "complete",
   "message": "<completion_message>",
@@ -115,7 +115,7 @@ CRITICAL: The JSON must match this exact structure:
 
 ### Step 3: Validation Checklist
 
-Before calling router-mcp, verify:
+Before calling taskrouter-mcp, verify:
 - ✅ "type" field = "all_steps_json" (exact string)
 - ✅ "workflow_id" is unique string (e.g., "myapp-001")
 - ✅ "original_goal" from spec project.goal
@@ -127,9 +127,9 @@ Before calling router-mcp, verify:
   - "instruction": task description from spec
   - "details": array of strings from spec
 
-### Step 4: Call router-mcp
+### Step 4: Call taskrouter-mcp
 
-Use router-mcp tool: `initialize_workflow`
+Use taskrouter-mcp tool: `initialize_workflow`
 Input: the validated all_steps_json object
 Wait for response
 
@@ -168,14 +168,14 @@ When receiving "All the steps for {agent} are DONE":
 }
 ```
 
-2. Call router-mcp tool: `process_step_completion`
+2. Call taskouter-mcp tool: `process_step_completion`
 3. Receive next step or completion response
 4. If status is "continue": Format next step for user (repeat Step 5 format)
 5. If status is "complete": Display completion summary
 
 ### Step 7: Completion
 
-When router-mcp returns status "complete":
+When taskrouter-mcp returns status "complete":
 - Display the execution summary
 - Show total steps completed, files created/modified, agents used
 - Inform user that workflow is finished

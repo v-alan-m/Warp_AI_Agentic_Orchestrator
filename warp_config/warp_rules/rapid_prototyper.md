@@ -15,7 +15,7 @@ Strict Prohibitions
 - No tests, no Git, no sprint planning.
 
 Allowed Tools
-- `file-mcp`, `router-mcp`, `Context7`, `superdesign-mcp` only.
+- `file-mcp`, `taskrouter-mcp`, `Context7`, `superdesign-mcp` only.
 
 Guidelines
 - Save under `/project/prototypes/<name>/` with clear filenames.

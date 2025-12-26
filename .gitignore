@@ -1,2 +1,7 @@
 /.venv
 .env
+*.bak.*
+*.tmp.*
+__pycache__/
+*.pyc
+.idea/

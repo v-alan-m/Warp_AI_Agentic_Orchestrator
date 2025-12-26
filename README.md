@@ -4,20 +4,20 @@
 
 FastMCP server implementation for managing multi-agent workflows in Warp. This server handles workflow initialization and step-by-step execution routing according to the Warp-RouterMCP Architecture.
 
-# Why the Warp Orchestrator MCP exists 🧠
+# Why the Warp Orchestrator MCP exists
 
 The Warp Orchestrator MCP turns “a collection of optimised agents” into a **repeatable, auditable workflow**. Instead of manually picking an agent and hoping Warp’s suggestions choose the right tools, the orchestrator codifies *how* work flows between agents (e.g. `FileCreator → FrontendDeveloper → BackendDeveloper → GitWorkflow`), which tools each is allowed to use, and how every step is logged. That means you get **deterministic multi-agent pipelines** with clear call stacks, build summaries, and change logs that can be replayed, debugged, or reused from any MCP-compatible client — not just Warp.
 
-In practice, this MCP acts as a **policy + workflow brain** 🧩 on top of Warp’s agents:
+In practice, this MCP acts as a **policy + workflow brain** on top of Warp’s agents:
 - It enforces **hard boundaries** between sub-agents (who can read/write what, who can commit, who can refactor).
 - It standardises cross-agent sequences (always plan → implement → test → commit → document) instead of leaving them to ad-hoc prompts.
 - It produces **machine-readable logs** (`router_log.jsonl`, `build-summary.md`, `CHANGELOG.md`) so teams can inspect exactly what the AI did, when, and why.
 
 The result is that AI work stops being a series of one-off chats and becomes a **governed, version-controlled pipeline** you can trust, repeat, and plug into other tools.
 
-## Who is this for? (Use cases by scale) 🎯
+## Who is this for? (Use cases by scale) 
 
-### Individual developers & power users 👤💻
+### Individual developers & power users
 - **Structured solo workflows**  
   - Use TaskRouter as your “foreman” to always run a predictable chain: scaffold → implement → test → review → commit.
 - **Reproducible refactors**  
@@ -25,7 +25,7 @@ The result is that AI work stops being a series of one-off chats and becomes a *
 - **Safer automation experiments**  
   - Lock risky actions (e.g. `git push`, deployment scripts) behind a dedicated GitWorkflow agent, instead of giving every agent full shell access.
 
-### Small businesses / agencies 🧑‍
+### Small businesses / agencies
 - **Repeatable project templates**  
   - Define one orchestrated workflow for “new client project” (spec → scaffold → API → frontend → docs) and reuse it across clients.
 - **Lightweight compliance & transparency**  
@@ -33,7 +33,7 @@ The result is that AI work stops being a series of one-off chats and becomes a *
 - **Hybrid human+AI delivery**  
   - Humans review the orchestrator’s call stack and logs to quickly understand where to step in, fix, or extend work.
 
-### Medium-sized product teams 🚀
+### Medium-sized product teams
 - **Standardised multi-agent pipelines across squads**  
   - Keep the same orchestration logic (agents, order, safety rules) across multiple repos and services, instead of each team reinventing its own prompt stack.
 - **Auditability for AI-generated changes**  
@@ -41,7 +41,7 @@ The result is that AI work stops being a series of one-off chats and becomes a *
 - **Policy enforcement via code, not culture**  
   - Encode rules like “only GitWorkflow can merge to `main`” or “BackendDeveloper must call TestRunner before handing off” directly into the orchestrator.
 
-### Large organisations / platforms 🌐
+### Large organisations / platforms
 - **Centralised AI governance layer**  
   - Treat the Orchestrator MCP as a **policy engine** that all Warp agents (and other MCP clients) must go through for critical repos.
 - **Cross-tool reuse**  

@@ -59,7 +59,7 @@ The MCP server needs to be configured in Warp so the TaskRouter agent can access
 3. Click **Add Server**
 4. Configure the server:
 
-   **Server Name**: `taskrouter-mcp` (or `router-mcp`)
+   **Server Name**: `taskrouter-mcp`)
    
    **Command**: `python`
    
@@ -103,7 +103,7 @@ After editing, restart Warp to reload the configuration.
 Ensure the TaskRouter agent profile has access to the MCP server:
 
 1. Open **Warp Settings → AI → Agent Profiles**
-2. Select **TaskRouter** profile
+2. Create **TaskRouter** profile
 3. Under **MCP Allowlist**, ensure `taskrouter-mcp` is listed
 4. Repeat for any other agents that need access (typically only TaskRouter needs it)
 
@@ -240,6 +240,19 @@ docker rm taskrouter-mcp
 docker-compose down
 ```
 
+## Add other MCP servers
+
+- To set up the other MCP servers in this porject please refer to the [MCP Server Setup Guide](MCP_servers_setup_guide.md).
+  - Other MCP servers can be integrated into this project, using the same guide.
+
+- We suggest you have a local backup of your MCP setup configuration (as Warp does not keep backups for you.)
+  - The files [warp-agent-config.yaml](warp-agent-config.yaml) and [warp-mcp-config.yaml](warp-mcp-config.yaml)
+  - To update this files please use this [GUI manager]: [mcp_gui_manager.py](mcp_gui_manager.py)
+
+- If you add an LLM key into an .env file in the parent directory, it will autogenerate the new MCP server rule!
+  - Paste this rule into Warp's rules for easy integration with this Taskrouter MCP server.
+    - You can add more context to the rule after you autogenerate it with the GUI.
+
 ## Usage Examples
 
 ### How to Use This MCP Server
@@ -247,7 +260,7 @@ docker-compose down
 This MCP server is designed to work with the **TaskRouter agent** in Warp. The TaskRouter agent acts as the orchestrator that calls the MCP tools.
 
 **Important**: 
-- Always use `As TaskRouter:` at the start of your prompts (NOT `As router-mcp`)
+- Always use `As TaskRouter:` at the start of your prompts (NOT `As taskrouter-mcp`)
 - The TaskRouter agent has access to the `taskrouter-mcp` MCP server tools
 - The MCP server name is `taskrouter-mcp`, but you interact through the TaskRouter agent
 
@@ -334,8 +347,8 @@ As TaskRouter: Read C:\projects\my-new-app\docs\site-spec.yaml and initialize a 
 ### Key Prompting Rules
 
 1. **Always start with** `As TaskRouter:` - This activates the TaskRouter agent profile
-2. **Reference the MCP** with `taskrouter-mcp` or `router-mcp` in your prompt (both work)
-3. **Don't use** `As router-mcp:` - The MCP is a tool, not an agent
+2. **Reference the MCP** with `taskrouter-mcp` or `taskrouter-mcp` in your prompt (both work)
+3. **Don't use** `As taskrouter-mcp:` - The MCP is a tool, not an agent
 4. **For spec files**, use format: `Read [path] and initialize a workflow with taskrouter-mcp`
 5. **For completions**, copy exact text: `"All the steps for [AgentName] are DONE"`
 
@@ -401,7 +414,7 @@ The server exposes these MCP tools:
 ## Workflow Execution Flow
 
 ```
-Warp                          router-mcp
+Warp                      taskrouter-mcp
   |                              |
   |-- all_steps_json ----------->|
   |                              | (store plan)

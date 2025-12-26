@@ -100,7 +100,7 @@ class WorkflowState:
         }
 
 
-@server.call_tool()
+@server.tool()
 def initialize_workflow(payload: dict) -> str:
     """
     Initialize workflow with all_steps_json
@@ -171,7 +171,7 @@ def initialize_workflow(payload: dict) -> str:
         return json.dumps({"error": f"Workflow initialization failed: {str(e)}"})
 
 
-@server.call_tool()
+@server.tool()
 def process_step_completion(payload: dict) -> str:
     """
     Process single_done_step_json
@@ -255,7 +255,7 @@ def process_step_completion(payload: dict) -> str:
         )
 
 
-@server.call_tool()
+@server.tool()
 def get_workflow_status(workflow_id: str) -> str:
     """Get current status of a workflow"""
     try:
@@ -287,7 +287,7 @@ def get_workflow_status(workflow_id: str) -> str:
         )
 
 
-@server.call_tool()
+@server.tool()
 def health_check() -> str:
     """Health check endpoint"""
     return json.dumps(
@@ -301,4 +301,4 @@ def health_check() -> str:
 
 if __name__ == "__main__":
     logger.info("Starting taskrouter-mcp server...")
-    server.run(stdio=True)
+    server.run(transport="stdio")

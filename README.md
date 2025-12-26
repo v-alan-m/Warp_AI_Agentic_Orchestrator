@@ -61,6 +61,7 @@ See `Warp_RouterMCP_Architecture.md` for complete architecture documentation.
 
 - Python 3.9+
 - pip
+- FastMCP 2.14.1+ (automatically installed via requirements.txt)
 
 ### Installation
 
@@ -79,6 +80,8 @@ See `Warp_RouterMCP_Architecture.md` for complete architecture documentation.
    ```bash
    pip install -r requirements.txt
    ```
+
+   **Note**: This project requires FastMCP 2.14.1 or later, which uses the `@server.tool()` decorator syntax and `server.run(transport="stdio")` method.
 
 ### Running Locally
 
@@ -181,6 +184,15 @@ Warp automatically:
 #### Import errors
 - Activate virtual environment if using one
 - Reinstall dependencies: `pip install --force-reinstall -r requirements.txt`
+
+#### ModuleNotFoundError: No module named 'mcp'
+- Run: `pip install -r requirements.txt`
+- Ensure you're in the correct virtual environment
+
+#### TypeError with @server decorators
+- This means you have an older version of FastMCP installed
+- Update to FastMCP 2.14.1+: `pip install --upgrade fastmcp>=2.14.1`
+- The project uses the newer `@server.tool()` syntax (not `@server.call_tool()`)
 
 ## Docker Setup
 

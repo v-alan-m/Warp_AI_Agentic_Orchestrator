@@ -1,5 +1,3 @@
-
-
 # TaskRouter-MCP: Warp-RouterMCP Orchestration Server
 
 FastMCP server implementation for managing multi-agent workflows in Warp. This server handles workflow initialization and step-by-step execution routing according to the Warp-RouterMCP Architecture.
@@ -11,7 +9,6 @@ The Warp Orchestrator MCP turns “a collection of optimised agents” into a **
 In practice, this MCP acts as a **policy + workflow brain** on top of Warp’s agents:
 - It enforces **hard boundaries** between sub-agents (who can read/write what, who can commit, who can refactor).
 - It standardises cross-agent sequences (always plan → implement → test → commit → document) instead of leaving them to ad-hoc prompts.
-- It produces **machine-readable logs** (`router_log.jsonl`, `build-summary.md`, `CHANGELOG.md`) so teams can inspect exactly what the AI did, when, and why.
 
 The result is that AI work stops being a series of one-off chats and becomes a **governed, version-controlled pipeline** you can trust, repeat, and plug into other tools.
 
@@ -28,8 +25,6 @@ The result is that AI work stops being a series of one-off chats and becomes a *
 ### Small businesses / agencies
 - **Repeatable project templates**  
   - Define one orchestrated workflow for “new client project” (spec → scaffold → API → frontend → docs) and reuse it across clients.
-- **Lightweight compliance & transparency**  
-  - Hand clients a `build-summary.md` and `CHANGELOG.md` showing exactly what the AI changed in their repo.
 - **Hybrid human+AI delivery**  
   - Humans review the orchestrator’s call stack and logs to quickly understand where to step in, fix, or extend work.
 
